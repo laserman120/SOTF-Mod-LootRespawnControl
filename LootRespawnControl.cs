@@ -12,6 +12,7 @@ using Il2CppInterop.Runtime;
 using Il2CppInterop.Common;
 using Sons.Gameplay;
 using static LootRespawnControl.LootRespawnSaveManager;
+using SUI;
 
 namespace LootRespawnControl;
 
@@ -77,7 +78,8 @@ public class LootRespawnControl : SonsMod
     527, // batteries
     661, // battery
     517, // saucepan
-    504  //tarp
+    504, //tarp
+    590  //radio
 };
 
     public static List<int> ItemIdsFood = new List<int>()
@@ -88,11 +90,17 @@ public class LootRespawnControl : SonsMod
     434, // canned food
     436, // fish
     438, // dry rations
-    441, // candy bar
     464, // cat food
     569, // piece of brain
     570, // piece of steak
     571  // piece of bacon
+};
+
+    public static List<int> ItemIdsMedicineAndEnergy = new List<int>()
+{
+    437, // pills
+    441, // candy bar
+    439  //energy drink
 };
 
     public static List<int> ItemIdsAmmunition = new List<int>()
@@ -138,7 +146,7 @@ public class LootRespawnControl : SonsMod
 
     protected override void OnSdkInitialized()
     {
-        LootRespawnControlUi.Create();
+        SettingsRegistry.CreateSettings(this, null, typeof(Config));
     }
 
     //Patch the spawning of pickups
@@ -155,13 +163,9 @@ public class LootRespawnControl : SonsMod
             }
             string identifier = identifierComponent.Identifier;
 
-            if (LootRespawnManager.IsLootCollected(identifier))
+            if (LootRespawnManager.IsLootCollected(identifier) && ShouldIdBeRemoved(__instance._itemId))
             {
-                if (ShouldIdBeRemoved(__instance._itemId))
-                {
-                    UnityEngine.Object.Destroy(__instance._destroyTarget);
-                    RLog.Msg("Destroyed Object");
-                }   
+                UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }
     }
@@ -175,15 +179,10 @@ public class LootRespawnControl : SonsMod
             LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
             string identifier = identifierComponent.Identifier;
 
-            if (__instance.name.Contains("Clone"))
-            {
-                RLog.Msg("Player spawned object, ignored!");
-                return;
-            }
+            if (__instance.name.Contains("Clone")) { return; }
             
             if(ShouldIdBeRemoved(__instance._itemId))
             {
-                RLog.Msg("collected with identififer: " + identifier + " type: " + __instance.name);
                 LootRespawnManager.MarkLootAsCollected(identifier);
             }
         }
@@ -199,12 +198,12 @@ public class LootRespawnControl : SonsMod
         if (ItemIdsExpendables.Contains(ItemId) && !Config.AllowExpandables.Value) { result = true; }
         if (ItemIdsFood.Contains(ItemId) && !Config.AllowFood.Value) { result = true; }
         if (ItemIdsThrowables.Contains(ItemId) && !Config.AllowThrowables.Value) { result = true; }
+        if (ItemIdsMedicineAndEnergy.Contains(ItemId) && !Config.AllowMeds.Value) { result = true; }
         return result;
     }
 }
 public class LootRespawnManager
 {
-
     public static HashSet<string> collectedLootIds = new HashSet<string>();
 
     public static string GenerateLootID(Vector3 position, Quaternion rotation)

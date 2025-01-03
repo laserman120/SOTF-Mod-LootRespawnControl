@@ -10,6 +10,7 @@ public static class Config
     public static ConfigEntry<bool> AllowWeaponMods { get; private set; }
     public static ConfigEntry<bool> AllowMaterials { get; private set; }
     public static ConfigEntry<bool> AllowFood { get; private set; }
+    public static ConfigEntry<bool> AllowMeds { get; private set; }
     public static ConfigEntry<bool> AllowAmmunition { get; private set; }
     public static ConfigEntry<bool> AllowThrowables { get; private set; }
     public static ConfigEntry<bool> AllowExpandables { get; private set; }
@@ -49,6 +50,12 @@ public static class Config
         false,
         "Allow Food",
         "Allows food to respawn (Cat Food, Meat Cubes, Cereal...)");
+
+        AllowMeds = Category.CreateEntry(
+        "AllowMeds",
+        false,
+        "Allow Medicine & Energy",
+        "Allows medicine and energy drinks to respawn");
 
         AllowAmmunition = Category.CreateEntry(
         "AllowAmmunition",
