@@ -1,0 +1,96 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="Alt.Json">
+        <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_RedLoader\net6\Alt.Json.dll</HintPath>
+      </Reference>
+      <Reference Include="Il2CppInterop.Common">
+        <HintPath>$(GameDir)\_RedLoader\net6\Il2CppInterop.Common.dll</HintPath>
+      </Reference>
+      <Reference Include="Il2CppInterop.Generator">
+        <HintPath>$(GameDir)\_RedLoader\net6\Il2CppInterop.Generator.dll</HintPath>
+      </Reference>
+      <Reference Include="Il2CppInterop.Runtime">
+        <HintPath>$(GameDir)\_RedLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+      </Reference>
+      <Reference Include="Il2Cppmscorlib">
+        <HintPath>$(GameDir)\_RedLoader\Game\Il2Cppmscorlib.dll</HintPath>
+      </Reference>
+      <Reference Include="Newtonsoft.Json">
+        <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_RedLoader\Game\Newtonsoft.Json.dll</HintPath>
+      </Reference>
+      <Reference Include="RedLoader">
+        <HintPath>$(GameDir)\_RedLoader\net6\RedLoader.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.dll</HintPath>
+      </Reference>
+        <Reference Include="Endnight">
+            <HintPath>$(GameDir)\_RedLoader\Game\Endnight.dll</HintPath>
+        </Reference>
+        <Reference Include="Sons.Save">
+          <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_RedLoader\Game\Sons.Save.dll</HintPath>
+        </Reference>
+      <Reference Include="SonsSdk">
+        <HintPath>$(GameDir)\_RedLoader\net6\SonsSdk.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.CoreModule">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.CoreModule.dll</HintPath>
+      </Reference>
+      <Reference Include="0Harmony">
+        <HintPath>$(GameDir)\_RedLoader\net6\0Harmony.dll</HintPath>
+      </Reference>
+      <Reference Include="bolt">
+        <HintPath>$(GameDir)\_RedLoader\Game\bolt.dll</HintPath>
+      </Reference>
+      <Reference Include="Bolt.Unity">
+        <HintPath>$(GameDir)\_RedLoader\Game\Bolt.Unity.dll</HintPath>
+      </Reference>
+      <Reference Include="bolt.user">
+        <HintPath>$(GameDir)\_RedLoader\Game\bolt.user.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons.Construction">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.Construction.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons.Construction.Utils">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.Construction.Utils.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons.Gui">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.Gui.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons.Item">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.Item.dll</HintPath>
+      </Reference>
+      <Reference Include="Sons.Multiplayer">
+        <HintPath>$(GameDir)\_RedLoader\Game\Sons.Multiplayer.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.AssetBundleModule">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.AssetBundleModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.PhysicsModule">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.PhysicsModule.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.UI">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.UI.dll</HintPath>
+      </Reference>
+      <Reference Include="UnityEngine.UIModule">
+        <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.UIModule.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="manifest.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+        <None Remove="ReleaseBuild\**" />
+    </ItemGroup>
+
+</Project>
