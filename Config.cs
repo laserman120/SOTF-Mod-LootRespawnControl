@@ -25,19 +25,19 @@ public static class Config
         "AllowMelee",
         false,
         "Allow Melee Weapons",
-        "Allows melee weapons to respawn");
+        "Allows melee weapons to respawn (Modern Axe, Fire Axe, Stun Baton...");
 
         AllowRanged = Category.CreateEntry(
         "AllowRanged",
         false,
         "Allow Ranged Weapons",
-        "Allows ranged weapons to respawn");
+        "Allows ranged weapons to respawn (Pistol, Shotgun, Crossbow...)");
 
         AllowWeaponMods = Category.CreateEntry(
         "AllowWeaponMods ",
         false,
         "Allow Weapon Mods",
-        "Allows weapon mMods to respawn");
+        "Allows weapon mods to respawn (Pistol Rail, Gun Flashlight...)");
 
         AllowMaterials = Category.CreateEntry(
         "AllowMaterials",

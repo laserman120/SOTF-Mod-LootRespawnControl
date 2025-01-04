@@ -147,6 +147,8 @@ public class LootRespawnControl : SonsMod
     protected override void OnSdkInitialized()
     {
         SettingsRegistry.CreateSettings(this, null, typeof(Config));
+        var saveManager = new LootRespawnSaveManager();
+        SonsSaveTools.Register(saveManager);
     }
 
     //Patch the spawning of pickups
@@ -155,7 +157,6 @@ public class LootRespawnControl : SonsMod
     {
         private static void Postfix(Sons.Gameplay.PickUp __instance)
         {
-
             LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
             if(identifierComponent == null) {
                 // Add the LootIdentifier component to the parent
@@ -184,6 +185,12 @@ public class LootRespawnControl : SonsMod
             if(ShouldIdBeRemoved(__instance._itemId))
             {
                 LootRespawnManager.MarkLootAsCollected(identifier);
+                return;
+            }
+            
+            if (LootRespawnManager.IsLootCollected(identifier))
+            {
+                LootRespawnManager.RemoveLootFromCollected(identifier);
             }
         }
     }
@@ -225,13 +232,18 @@ public class LootRespawnManager
     public static string SaveCollectedLoot()
     {
         var serializableSet = new SerializableHashSet<string>(LootRespawnManager.collectedLootIds);
+        RLog.Msg(serializableSet.ToString());
         return JsonConvert.SerializeObject(serializableSet);
     }
 
-    public static void LoadCollectedLoot(LootSaveData obj)
+    public static void LoadCollectedLoot(string jsonData)
     {
-        string jsonData = obj.collectedLootJson;
+        if(jsonData == null) {
+            LootRespawnManager.collectedLootIds = new HashSet<string>();
+            return; }
         var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<string>>(jsonData);
+        
+        RLog.Msg(serializableSet.ToString());
         LootRespawnManager.collectedLootIds = serializableSet.ToHashSet();
     }
 
@@ -244,6 +256,11 @@ public class LootRespawnManager
     public static void MarkLootAsCollected(string identifier)
     {
         collectedLootIds.Add(identifier);
+    }
+
+    public static void RemoveLootFromCollected(string identifier)
+    {
+        collectedLootIds.Remove(identifier);
     }
 
     [Serializable]
@@ -292,12 +309,12 @@ public class LootRespawnSaveManager : ICustomSaveable<LootRespawnSaveManager.Loo
         var LootSaveData = new LootSaveData();
         LootSaveData.collectedLootJson = LootRespawnManager.SaveCollectedLoot();
 
-        return new LootSaveData();
+        return LootSaveData;
     }
 
     public void Load(LootSaveData obj)
     {
-        LootRespawnManager.LoadCollectedLoot(obj);
+        LootRespawnManager.LoadCollectedLoot(obj.collectedLootJson);
     }
 
     public class LootSaveData
