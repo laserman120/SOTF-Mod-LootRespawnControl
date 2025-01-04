@@ -11,10 +11,11 @@ public static class Config
     public static ConfigEntry<bool> AllowMaterials { get; private set; }
     public static ConfigEntry<bool> AllowFood { get; private set; }
     public static ConfigEntry<bool> AllowMeds { get; private set; }
+    public static ConfigEntry<bool> AllowPlants { get; private set; }
     public static ConfigEntry<bool> AllowAmmunition { get; private set; }
     public static ConfigEntry<bool> AllowThrowables { get; private set; }
-    public static ConfigEntry<bool> AllowExpandables { get; private set; }
-
+    public static ConfigEntry<bool> AllowExpendables { get; private set; }
+    public static ConfigEntry<bool> AllowBreakables { get; private set; }
     //public static ConfigEntry<bool> SomeEntry { get; private set; }
 
     public static void Init()
@@ -49,13 +50,19 @@ public static class Config
         "AllowFood",
         false,
         "Allow Food",
-        "Allows food to respawn (Cat Food, Meat Cubes, Cereal...)");
+        "This allows food to respawn (Cat Food, Cereal, MRE packs...)");
 
         AllowMeds = Category.CreateEntry(
         "AllowMeds",
         false,
         "Allow Medicine & Energy",
         "Allows medicine and energy drinks to respawn");
+
+        AllowPlants = Category.CreateEntry(
+        "AllowPlants",
+        false,
+        "Allow plants to spawn",
+        "Allows plants to respawn(Aloe Vera, Mushrooms, Chicory...)");
 
         AllowAmmunition = Category.CreateEntry(
         "AllowAmmunition",
@@ -69,11 +76,17 @@ public static class Config
         "Allow Throwables",
         "Allows throwables to respawn (Grenades, Sticky Bombs, Golf Balls...)");
 
-        AllowExpandables = Category.CreateEntry(
-        "AllowExpandables",
+        AllowExpendables = Category.CreateEntry(
+        "AllowExpendables",
         false,
-        "Allow Expandables",
-        "Allows expandables to respawn (Air Canisters, Printer Ink, Hide Bags)");
+        "Allow Expendables",
+        "Allows expendables to respawn (Air Canisters, Printer Ink, Hide Bags)");
+
+        AllowBreakables = Category.CreateEntry(
+        "AllowBreakables",
+        false,
+        "Allow Breakables",
+        "Allows breakable objects to respawn (Laptops, Gore Vases...)");
     }
 
     // Same as the callback in "CreateSettings". Called when the settings ui is closed.

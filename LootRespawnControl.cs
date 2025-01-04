@@ -103,6 +103,20 @@ public class LootRespawnControl : SonsMod
     439  //energy drink
 };
 
+    public static List<int> ItemIdsPlants = new List<int>()
+{
+    397, // shiitake
+    398, // oyster mushrooms
+    399, // yellow hedgehog
+    400, // fly agaric
+    450, // horsetail
+    451, // aloe vera
+    452, // yarrow
+    453, // cypress
+    454, // balsamorrhiza
+    465  // chicory
+};
+
     public static List<int> ItemIdsAmmunition = new List<int>()
 {
     373, // carbon fiber arrows
@@ -134,6 +148,18 @@ public class LootRespawnControl : SonsMod
     508  // hide bag
 };
 
+    public static List<int> ItemIdsTransport = new List<int>()
+{
+    626, // paraglider
+    630  // knight v
+
+};
+
+    public static List<int> ItemIdsBlacklistBreakable = new List<int>()
+{
+    392  // stick
+};
+
     public LootRespawnControl()
     {
         HarmonyPatchAll = true;
@@ -153,7 +179,7 @@ public class LootRespawnControl : SonsMod
 
     //Patch the spawning of pickups
     [HarmonyPatch(typeof(Sons.Gameplay.PickUp), "Awake")]
-    private static class AwakePatch
+    private static class PickUpAwakePatch
     {
         private static void Postfix(Sons.Gameplay.PickUp __instance)
         {
@@ -167,6 +193,27 @@ public class LootRespawnControl : SonsMod
             if (LootRespawnManager.IsLootCollected(identifier) && ShouldIdBeRemoved(__instance._itemId))
             {
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
+            }
+        }
+    }
+
+    //Patch the spawning of breakables
+    [HarmonyPatch(typeof(Sons.Gameplay.BreakableObject), "Awake")]
+    private static class BreakableObjectAwakePatch
+    {
+        private static void Postfix(Sons.Gameplay.BreakableObject __instance)
+        {
+            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
+            if (identifierComponent == null)
+            {
+                // Add the LootIdentifier component to the parent
+                identifierComponent = __instance.transform.gameObject.AddComponent<LootIdentifier>();
+            }
+            string identifier = identifierComponent.Identifier;
+
+            if (LootRespawnManager.IsLootCollected(identifier) && !Config.AllowBreakables.Value)
+            {
+                UnityEngine.Object.Destroy(__instance.transform.gameObject);
             }
         }
     }
@@ -195,6 +242,56 @@ public class LootRespawnControl : SonsMod
         }
     }
 
+    //runs whenever a breakable object is broken
+    [HarmonyPatch(typeof(Sons.Gameplay.BreakableObject), "OnBreak")]
+    private static class OnBreakPatch
+    {
+        private static void Postfix(Sons.Gameplay.BreakableObject __instance)
+        {
+            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
+            string identifier = identifierComponent.Identifier;
+
+            if (__instance.name.Contains("Clone")) { return; }
+
+            //Pickup is a simple item spawner on broken
+            PickUp PickUp = __instance._brokenPrefab?.transform.GetComponent<PickUp>() ?? null;
+            int PickUpArrayLength = __instance._spawnDefinitions.Count;
+            if (PickUp != null && !Config.AllowBreakables.Value)
+            {
+                //return out if blacklisted item would be dropped
+                if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { return; }
+                LootRespawnManager.MarkLootAsCollected(identifier);
+                return;
+            }
+            if (PickUpArrayLength > 0 && !Config.AllowBreakables.Value)
+            {
+                bool Blacklisted = false;
+                Il2CppSystem.Collections.Generic.List<BreakableObject.SpawnDefinition> SpawnDefinitions = __instance._spawnDefinitions;
+                //Iterate over the pick up array and check if any of the items are blacklisted
+                for (int i = 0; i < PickUpArrayLength; i++)
+                {
+                    PickUp PickUpComponent = SpawnDefinitions[i]._prefab?.transform.GetComponent<PickUp>() ?? null;
+                    if (PickUpComponent != null && ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
+                    {
+                        //if any is blacklisted set true and break out of loop
+                        Blacklisted = true;
+                        break;
+                    }
+                }
+                if (!Blacklisted)
+                {
+                    //if not blacklisted store the hash
+                    LootRespawnManager.MarkLootAsCollected(identifier);
+                }
+                return;
+            }
+            if (LootRespawnManager.IsLootCollected(identifier))
+            {
+                LootRespawnManager.RemoveLootFromCollected(identifier);
+            }
+        }
+    }
+
     private static bool ShouldIdBeRemoved(int ItemId)
     {
         bool result = false;
@@ -202,11 +299,20 @@ public class LootRespawnControl : SonsMod
         if (ItemIdsRangedWeapons.Contains(ItemId) && !Config.AllowRanged.Value) { result = true; }
         if (ItemIdsMaterials.Contains(ItemId) && !Config.AllowMaterials.Value) { result = true; }
         if (ItemIdsAmmunition.Contains(ItemId) && !Config.AllowAmmunition.Value) { result = true; }
-        if (ItemIdsExpendables.Contains(ItemId) && !Config.AllowExpandables.Value) { result = true; }
+        if (ItemIdsExpendables.Contains(ItemId) && !Config.AllowExpendables.Value) { result = true; }
         if (ItemIdsFood.Contains(ItemId) && !Config.AllowFood.Value) { result = true; }
         if (ItemIdsThrowables.Contains(ItemId) && !Config.AllowThrowables.Value) { result = true; }
         if (ItemIdsMedicineAndEnergy.Contains(ItemId) && !Config.AllowMeds.Value) { result = true; }
+        if (ItemIdsPlants.Contains(ItemId) && !Config.AllowPlants.Value) { result = true; }
         return result;
+    }
+
+
+    [DebugCommand("fullresetlootrespawncontrol")]
+    private void FullResetLootRespawnControl()
+    {
+        LootRespawnManager.collectedLootIds = new HashSet<string>();
+        SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
     }
 }
 public class LootRespawnManager
