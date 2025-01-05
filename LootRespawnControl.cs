@@ -13,6 +13,8 @@ using Il2CppInterop.Common;
 using Sons.Gameplay;
 using static LootRespawnControl.LootRespawnSaveManager;
 using SUI;
+using Sons.Environment;
+using static LootRespawnControl.LootRespawnManager;
 
 namespace LootRespawnControl;
 
@@ -192,6 +194,19 @@ public class LootRespawnControl : SonsMod
 
             if (LootRespawnManager.IsLootCollected(identifier) && ShouldIdBeRemoved(__instance._itemId))
             {
+                //Global Timer Check
+                if (Config.UseTimerGlobal.Value && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                {
+                    LootRespawnManager.RemoveLootFromCollected(identifier);
+                    return;
+                }
+
+                //If the specific category times is enabled it will check this here
+                if (ShouldIdBeRemovedTimed(__instance._itemId) && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                {
+                    LootRespawnManager.RemoveLootFromCollected(identifier);
+                    return;
+                }
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }
@@ -213,6 +228,19 @@ public class LootRespawnControl : SonsMod
 
             if (LootRespawnManager.IsLootCollected(identifier) && !Config.AllowBreakables.Value)
             {
+                if (Config.UseTimerGlobal.Value && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                {
+                    LootRespawnManager.RemoveLootFromCollected(identifier);
+                    return;
+                }
+
+                //if breakable category is allowe timed, remove it
+                if(Config.AllowBreakablesTimed.Value && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                {
+                    LootRespawnManager.RemoveLootFromCollected(identifier);
+                    return;
+                }
+
                 UnityEngine.Object.Destroy(__instance.transform.gameObject);
             }
         }
@@ -249,6 +277,7 @@ public class LootRespawnControl : SonsMod
         private static void Postfix(Sons.Gameplay.BreakableObject __instance)
         {
             LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
+            if(identifierComponent == null) { return; }
             string identifier = identifierComponent.Identifier;
 
             if (__instance.name.Contains("Clone")) { return; }
@@ -265,7 +294,8 @@ public class LootRespawnControl : SonsMod
             }
             if (PickUpArrayLength > 0 && !Config.AllowBreakables.Value)
             {
-                bool Blacklisted = false;
+                bool HasBlacklisted = false;
+                bool NoPickupComponent = false;
                 Il2CppSystem.Collections.Generic.List<BreakableObject.SpawnDefinition> SpawnDefinitions = __instance._spawnDefinitions;
                 //Iterate over the pick up array and check if any of the items are blacklisted
                 for (int i = 0; i < PickUpArrayLength; i++)
@@ -274,13 +304,19 @@ public class LootRespawnControl : SonsMod
                     if (PickUpComponent != null && ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
                     {
                         //if any is blacklisted set true and break out of loop
-                        Blacklisted = true;
+                        HasBlacklisted = true;
+                        break;
+                    }
+                    if(PickUpComponent == null)
+                    {
+                        //if any do not have a pickup component we treat it as invalid. ( Fix for huts )
+                        NoPickupComponent = true;
                         break;
                     }
                 }
-                if (!Blacklisted)
+                if (!HasBlacklisted && !NoPickupComponent)
                 {
-                    //if not blacklisted store the hash
+                    //if not blacklisted and only includes pickup components store the hash
                     LootRespawnManager.MarkLootAsCollected(identifier);
                 }
                 return;
@@ -304,20 +340,63 @@ public class LootRespawnControl : SonsMod
         if (ItemIdsThrowables.Contains(ItemId) && !Config.AllowThrowables.Value) { result = true; }
         if (ItemIdsMedicineAndEnergy.Contains(ItemId) && !Config.AllowMeds.Value) { result = true; }
         if (ItemIdsPlants.Contains(ItemId) && !Config.AllowPlants.Value) { result = true; }
+
         return result;
     }
 
+    private static bool ShouldIdBeRemovedTimed(int ItemId)
+    {
+        bool result = false;
+        if (ItemIdsMeleeWeapons.Contains(ItemId) && Config.AllowMeleeTimed.Value) { result = true; }
+        if (ItemIdsRangedWeapons.Contains(ItemId) && Config.AllowRangedTimed.Value) { result = true; }
+        if (ItemIdsMaterials.Contains(ItemId) && Config.AllowMaterialsTimed.Value) { result = true; }
+        if (ItemIdsAmmunition.Contains(ItemId) && Config.AllowAmmunitionTimed.Value) { result = true; }
+        if (ItemIdsExpendables.Contains(ItemId) && Config.AllowExpendablesTimed.Value) { result = true; }
+        if (ItemIdsFood.Contains(ItemId) && Config.AllowFoodTimed.Value) { result = true; }
+        if (ItemIdsThrowables.Contains(ItemId) && Config.AllowThrowablesTimed.Value) { result = true; }
+        if (ItemIdsMedicineAndEnergy.Contains(ItemId) && Config.AllowMedsTimed.Value) { result = true; }
+        if (ItemIdsPlants.Contains(ItemId) && Config.AllowPlantsTimed.Value) { result = true; }
+
+        return result;
+    }
+
+    public static long GetTimestampFromGameTime(string gameTimeString)
+    {
+        // Parse the game time string
+        string[] parts = gameTimeString.Split(' ');
+        int day = int.Parse(parts[1]);
+        string timeString = parts[2];
+
+        // Parse the time string
+        TimeSpan time = TimeSpan.Parse(timeString);
+
+        // Calculate total seconds
+        long timestamp = day * 24 * 60 * 60 + (long)time.TotalSeconds;
+
+        return timestamp;
+    }
+
+    public static bool HasEnoughTimePassed(string identifier, long currentTimestamp)
+    {
+        long? originalTimestamp = GetLootTimestamp(identifier);
+        if (originalTimestamp == null)
+            return false; // No Timestamp found
+
+        long timePassed = currentTimestamp - originalTimestamp.Value;
+        long respawnTime = Config.TimeInDays.Value * 24 * 60 * 60;
+        return timePassed >= respawnTime;
+    }
 
     [DebugCommand("fullresetlootrespawncontrol")]
     private void FullResetLootRespawnControl()
     {
-        LootRespawnManager.collectedLootIds = new HashSet<string>();
+        LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
     }
 }
 public class LootRespawnManager
 {
-    public static HashSet<string> collectedLootIds = new HashSet<string>();
+    public static HashSet<LootData> collectedLootIds = new HashSet<LootData>();
 
     public static string GenerateLootID(Vector3 position, Quaternion rotation)
     {
@@ -331,42 +410,61 @@ public class LootRespawnManager
             {
                 builder.Append(bytes[i].ToString("x2"));
             }
+
+            
             return builder.ToString();
         }
     }
 
     public static string SaveCollectedLoot()
     {
-        var serializableSet = new SerializableHashSet<string>(LootRespawnManager.collectedLootIds);
-        RLog.Msg(serializableSet.ToString());
+        var serializableSet = new SerializableHashSet<LootData>(LootRespawnManager.collectedLootIds);
         return JsonConvert.SerializeObject(serializableSet);
     }
 
     public static void LoadCollectedLoot(string jsonData)
     {
         if(jsonData == null) {
-            LootRespawnManager.collectedLootIds = new HashSet<string>();
+            LootRespawnManager.collectedLootIds = new HashSet<LootData>();
             return; }
-        var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<string>>(jsonData);
+        var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
         
-        RLog.Msg(serializableSet.ToString());
         LootRespawnManager.collectedLootIds = serializableSet.ToHashSet();
     }
 
 
     public static bool IsLootCollected(string identifier)
     {
-        return collectedLootIds.Contains(identifier);
+        return collectedLootIds.Any(lootData => lootData.Hash == identifier);
     }
 
     public static void MarkLootAsCollected(string identifier)
     {
-        collectedLootIds.Add(identifier);
+        long timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString());
+        collectedLootIds.Add(new LootData(identifier, timestamp));
     }
 
     public static void RemoveLootFromCollected(string identifier)
     {
-        collectedLootIds.Remove(identifier);
+        collectedLootIds.RemoveWhere(lootData => lootData.Hash == identifier);
+    }
+
+    public static long? GetLootTimestamp(string identifier)
+    {
+        LootData lootData = collectedLootIds.FirstOrDefault(ld => ld.Hash == identifier);
+        return lootData != null ? lootData.Timestamp : null;
+    }
+
+    public class LootData
+    {
+        public string Hash { get; set; }
+        public long Timestamp { get; set; }
+
+        public LootData(string hash, long timestamp)
+        {
+            Hash = hash;
+            Timestamp = timestamp;
+        }
     }
 
     [Serializable]
