@@ -15,6 +15,9 @@ using static LootRespawnControl.LootRespawnSaveManager;
 using SUI;
 using Sons.Environment;
 using static LootRespawnControl.LootRespawnManager;
+using UnityEngine.SceneManagement;
+using Sons.Utilities;
+using Endnight.Utilities;
 
 namespace LootRespawnControl;
 
@@ -80,8 +83,8 @@ public class LootRespawnControl : SonsMod
     527, // batteries
     661, // battery
     517, // saucepan
-    504, //tarp
-    590  //radio
+    504, // tarp
+    590  // radio
 };
 
     public static List<int> ItemIdsFood = new List<int>()
@@ -131,7 +134,8 @@ public class LootRespawnControl : SonsMod
     370, // 1-5 pistol cartridges
     371, // 1-5 cartridges
     372, // 1-5 heavy bullets
-    457  // 1-2 ammo for taser
+    457, // 1-2 ammo for taser
+    523  // zipline rope
 };
 
     public static List<int> ItemIdsThrowables = new List<int>()
@@ -162,6 +166,12 @@ public class LootRespawnControl : SonsMod
     392  // stick
 };
 
+    public static List<int> CustomWhitelist = new List<int>();
+
+    public static List<int> CustomWhitelistTimed = new List<int>();
+
+    public static List<int> CustomBlacklist = new List<int>();
+
     public LootRespawnControl()
     {
         HarmonyPatchAll = true;
@@ -170,6 +180,9 @@ public class LootRespawnControl : SonsMod
     protected override void OnInitializeMod()
     {
         Config.Init();
+        CustomWhitelist = ExtractIds(Config.AllowList.Value);
+        CustomWhitelistTimed = ExtractIds(Config.AllowListTimed.Value);
+        CustomBlacklist = ExtractIds(Config.RemoveList.Value);
     }
 
     protected override void OnSdkInitialized()
@@ -185,28 +198,23 @@ public class LootRespawnControl : SonsMod
     {
         private static void Postfix(Sons.Gameplay.PickUp __instance)
         {
-            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-            if(identifierComponent == null) {
-                // Add the LootIdentifier component to the parent
-                identifierComponent = __instance.transform.gameObject.AddComponent<LootIdentifier>();
-            }
+            LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
             string identifier = identifierComponent.Identifier;
+
+            if (IsItemIdBlocked(__instance._itemId))
+            {
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
+                UnityEngine.Object.Destroy(__instance._destroyTarget);
+            }
 
             if (LootRespawnManager.IsLootCollected(identifier) && ShouldIdBeRemoved(__instance._itemId))
             {
-                //Global Timer Check
-                if (Config.UseTimerGlobal.Value && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                if (Config.UseTimerGlobal.Value && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ShouldIdBeRemovedTimed(__instance._itemId) && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
                     return;
                 }
-
-                //If the specific category times is enabled it will check this here
-                if (ShouldIdBeRemovedTimed(__instance._itemId) && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                {
-                    LootRespawnManager.RemoveLootFromCollected(identifier);
-                    return;
-                }
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }
@@ -218,12 +226,7 @@ public class LootRespawnControl : SonsMod
     {
         private static void Postfix(Sons.Gameplay.BreakableObject __instance)
         {
-            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-            if (identifierComponent == null)
-            {
-                // Add the LootIdentifier component to the parent
-                identifierComponent = __instance.transform.gameObject.AddComponent<LootIdentifier>();
-            }
+            LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
             string identifier = identifierComponent.Identifier;
 
             if (LootRespawnManager.IsLootCollected(identifier) && !Config.AllowBreakables.Value)
@@ -240,7 +243,7 @@ public class LootRespawnControl : SonsMod
                     LootRespawnManager.RemoveLootFromCollected(identifier);
                     return;
                 }
-
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
                 UnityEngine.Object.Destroy(__instance.transform.gameObject);
             }
         }
@@ -253,13 +256,15 @@ public class LootRespawnControl : SonsMod
         private static void Postfix(Sons.Gameplay.PickUp __instance)
         {
             LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-            string identifier = identifierComponent.Identifier;
-
+            if (identifierComponent == null) { return; }
             if (__instance.name.Contains("Clone")) { return; }
+
+            string identifier = identifierComponent.Identifier;
             
             if(ShouldIdBeRemoved(__instance._itemId))
             {
                 LootRespawnManager.MarkLootAsCollected(identifier);
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
                 return;
             }
             
@@ -278,9 +283,9 @@ public class LootRespawnControl : SonsMod
         {
             LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
             if(identifierComponent == null) { return; }
-            string identifier = identifierComponent.Identifier;
-
             if (__instance.name.Contains("Clone")) { return; }
+
+            string identifier = identifierComponent.Identifier;
 
             //Pickup is a simple item spawner on broken
             PickUp PickUp = __instance._brokenPrefab?.transform.GetComponent<PickUp>() ?? null;
@@ -288,36 +293,33 @@ public class LootRespawnControl : SonsMod
             if (PickUp != null && !Config.AllowBreakables.Value)
             {
                 //return out if blacklisted item would be dropped
-                if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { return; }
+                if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
+                
                 LootRespawnManager.MarkLootAsCollected(identifier);
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
                 return;
             }
             if (PickUpArrayLength > 0 && !Config.AllowBreakables.Value)
             {
                 bool HasBlacklisted = false;
-                bool NoPickupComponent = false;
                 Il2CppSystem.Collections.Generic.List<BreakableObject.SpawnDefinition> SpawnDefinitions = __instance._spawnDefinitions;
                 //Iterate over the pick up array and check if any of the items are blacklisted
                 for (int i = 0; i < PickUpArrayLength; i++)
                 {
                     PickUp PickUpComponent = SpawnDefinitions[i]._prefab?.transform.GetComponent<PickUp>() ?? null;
-                    if (PickUpComponent != null && ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
+                    if (PickUpComponent == null || ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
                     {
                         //if any is blacklisted set true and break out of loop
                         HasBlacklisted = true;
-                        break;
-                    }
-                    if(PickUpComponent == null)
-                    {
-                        //if any do not have a pickup component we treat it as invalid. ( Fix for huts )
-                        NoPickupComponent = true;
+                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist or empty pickup component in array: : {__instance.name}"); }
                         break;
                     }
                 }
-                if (!HasBlacklisted && !NoPickupComponent)
+                if (!HasBlacklisted)
                 {
                     //if not blacklisted and only includes pickup components store the hash
                     LootRespawnManager.MarkLootAsCollected(identifier);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
                 }
                 return;
             }
@@ -341,6 +343,9 @@ public class LootRespawnControl : SonsMod
         if (ItemIdsMedicineAndEnergy.Contains(ItemId) && !Config.AllowMeds.Value) { result = true; }
         if (ItemIdsPlants.Contains(ItemId) && !Config.AllowPlants.Value) { result = true; }
 
+        //Force no removal if whitelisted
+        if (CustomWhitelist.Contains(ItemId)) { result = false; }
+
         return result;
     }
 
@@ -357,20 +362,39 @@ public class LootRespawnControl : SonsMod
         if (ItemIdsMedicineAndEnergy.Contains(ItemId) && Config.AllowMedsTimed.Value) { result = true; }
         if (ItemIdsPlants.Contains(ItemId) && Config.AllowPlantsTimed.Value) { result = true; }
 
+        //Allow timed spawn of specific item if timed whitelist includes it
+        if (CustomWhitelistTimed.Contains(ItemId)) { result = true; }
+
+        return result;
+    }
+
+    private static bool IsItemIdBlocked(int ItemId)
+    {
+        bool result = false;
+        if (ItemIdsMeleeWeapons.Contains(ItemId) && Config.RemoveMelee.Value) { result = true; }
+        if (ItemIdsRangedWeapons.Contains(ItemId) && Config.RemoveRanged.Value) { result = true; }
+        if (ItemIdsMaterials.Contains(ItemId) && Config.RemoveMaterials.Value) { result = true; }
+        if (ItemIdsAmmunition.Contains(ItemId) && Config.RemoveAmmunition.Value) { result = true; }
+        if (ItemIdsExpendables.Contains(ItemId) && Config.RemoveExpendables.Value) { result = true; }
+        if (ItemIdsFood.Contains(ItemId) && Config.RemoveFood.Value) { result = true; }
+        if (ItemIdsThrowables.Contains(ItemId) && Config.RemoveThrowables.Value) { result = true; }
+        if (ItemIdsMedicineAndEnergy.Contains(ItemId) && Config.RemoveMeds.Value) { result = true; }
+        if (ItemIdsPlants.Contains(ItemId) && Config.RemovePlants.Value) { result = true; }
+
+        //Allow timed spawn of specific item if timed whitelist includes it
+        if (CustomBlacklist.Contains(ItemId)) { result = true; }
+
         return result;
     }
 
     public static long GetTimestampFromGameTime(string gameTimeString)
     {
-        // Parse the game time string
         string[] parts = gameTimeString.Split(' ');
         int day = int.Parse(parts[1]);
         string timeString = parts[2];
 
-        // Parse the time string
         TimeSpan time = TimeSpan.Parse(timeString);
 
-        // Calculate total seconds
         long timestamp = day * 24 * 60 * 60 + (long)time.TotalSeconds;
 
         return timestamp;
@@ -379,12 +403,28 @@ public class LootRespawnControl : SonsMod
     public static bool HasEnoughTimePassed(string identifier, long currentTimestamp)
     {
         long? originalTimestamp = GetLootTimestamp(identifier);
-        if (originalTimestamp == null)
-            return false; // No Timestamp found
+        if (originalTimestamp == null) { return false; }
 
         long timePassed = currentTimestamp - originalTimestamp.Value;
         long respawnTime = Config.TimeInDays.Value * 24 * 60 * 60;
         return timePassed >= respawnTime;
+    }
+
+    public static List<int> ExtractIds(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return new List<int>();
+        }
+
+        var ids = input
+            .Split(';')
+            .Select(id => id.Trim())
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Select(int.Parse)
+            .ToList();
+
+        return ids;
     }
 
     [DebugCommand("fullresetlootrespawncontrol")]
@@ -482,6 +522,7 @@ public class LootRespawnManager
         }
     }
 }
+
 [RegisterTypeInIl2Cpp]
 public class LootIdentifier : MonoBehaviour
 {
