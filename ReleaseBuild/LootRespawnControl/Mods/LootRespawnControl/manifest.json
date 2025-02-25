@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/ToniMacaroni/RedLoader/main/MetadataSchema.json",
   "id": "LootRespawnControl",
   "author": "GLaD0S",
-  "version": "1.0.5",
+  "version": "1.2.0",
   "description": "This mod will prevent loot to respawn after a reload.",
   "gameVersion": "1.0.0",
   "type": "Mod",

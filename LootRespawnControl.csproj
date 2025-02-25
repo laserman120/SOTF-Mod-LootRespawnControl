@@ -45,6 +45,9 @@
       <Reference Include="SonsSdk">
         <HintPath>$(GameDir)\_RedLoader\net6\SonsSdk.dll</HintPath>
       </Reference>
+      <Reference Include="udpkit">
+        <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_Redloader\Game\udpkit.dll</HintPath>
+      </Reference>
       <Reference Include="UnityEngine">
         <HintPath>$(GameDir)\_RedLoader\Game\UnityEngine.dll</HintPath>
       </Reference>
