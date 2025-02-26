@@ -194,8 +194,7 @@ public class LootRespawnControl : SonsMod
         CustomBlacklist = ExtractIds(Config.removeList.Value);
         CustomNetworkingList = ExtractIds(Config.networkList.Value);
 
-        //set the default values to the ConfigManager
-        ConfigManager.SetLocalConfigValues();
+        
 
         NetworkManager.RegisterPackets();
         _modVersion = Manifest.Version;
@@ -208,6 +207,9 @@ public class LootRespawnControl : SonsMod
         SettingsRegistry.CreateSettings(this, null, typeof(Config));
         var saveManager = new LootRespawnSaveManager();
         SonsSaveTools.Register(saveManager);
+
+        //set the default values to the ConfigManager
+        ConfigManager.SetLocalConfigValues();
     }
 
     protected override void OnGameStart()
@@ -367,7 +369,7 @@ public class LootRespawnControl : SonsMod
                 //return out if blacklisted item would be dropped
                 if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
                 
-                LootRespawnManager.MarkLootAsCollected(identifier);
+                LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
                 if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
                 return;
             }
@@ -390,7 +392,7 @@ public class LootRespawnControl : SonsMod
                 if (!HasBlacklisted)
                 {
                     //if not blacklisted and only includes pickup components store the hash
-                    LootRespawnManager.MarkLootAsCollected(identifier);
+                    LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
                 }
                 return;
@@ -404,11 +406,14 @@ public class LootRespawnControl : SonsMod
 
     public static void HandlePickupDataRecieved(string objectName, string identifier)
     {
-        GameObject pickupObject = GameObject.Find(objectName);
-        if(pickupObject != null)
+        if(objectName != null)
         {
-            GameObject.Destroy(pickupObject);
-            if (Config.ConsoleLogging.Value){ RLog.Msg($"Found {pickupObject} destroying..."); }
+            GameObject pickupObject = GameObject.Find(objectName);
+            if (pickupObject != null)
+            {
+                GameObject.Destroy(pickupObject);
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Found {pickupObject} destroying..."); }
+            }
         }
         MarkLootAsCollected(identifier);
     }
@@ -459,6 +464,14 @@ public class LootRespawnControl : SonsMod
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
     }
+
+    [DebugCommand("lrcnetserializetest")]
+    private void LRCNetSerializeTest()
+    {
+        string serializedData = Config.Serialize();
+        ConfigManager.DeserializeConfig(serializedData);
+        RLog.Msg("Done!");
+    }
 }
 public class LootRespawnManager
 {
@@ -504,13 +517,13 @@ public class LootRespawnManager
         return collectedLootIds.Any(lootData => lootData.Hash == identifier);
     }
 
-    public static void MarkLootAsCollected(string identifier, string objectName = null, int itemId = 0)
+    public static void MarkLootAsCollected(string identifier, string objectName = null, int itemId = 0, bool isBreakable  = false)
     {
         long timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString());
         collectedLootIds.Add(new LootData(identifier, timestamp));
-        if(objectName != null)
+        if(objectName != null || isBreakable)
         {
-            if (ConfigManager.ShouldIdBeNetworked(itemId))
+            if (ConfigManager.ShouldIdBeNetworked(itemId) || isBreakable)
             {
                 NetworkManager.SendPickupEvent(objectName, identifier, timestamp);
             }

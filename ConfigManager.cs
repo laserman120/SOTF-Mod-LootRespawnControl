@@ -8,57 +8,57 @@ using System.Threading.Tasks;
 
 namespace LootRespawnControl
 {
-    internal class ConfigManager
+    public static class ConfigManager
     {
-        internal static bool useTimerGlobal;
-        internal static int timeInDays;
-        internal static bool allowMelee;
-        internal static bool allowMeleeTimed;
-        internal static bool removeMelee;
-        internal static bool enableNetworkingMelee; 
-        internal static bool allowRanged;
-        internal static bool allowRangedTimed;
-        internal static bool removeRanged;
-        internal static bool enableNetworkingRanged;
-        internal static bool allowWeaponMods;
-        internal static bool allowWeaponModsTimed;
-        internal static bool removeWeaponMods;
-        internal static bool enableNetworkingWeaponMods;
-        internal static bool allowMaterials;
-        internal static bool allowMaterialsTimed;
-        internal static bool removeMaterials;
-        internal static bool enableNetworkingMaterials; 
-        internal static bool allowFood;
-        internal static bool allowFoodTimed;
-        internal static bool removeFood;
-        internal static bool enableNetworkingFood; 
-        internal static bool allowMeds;
-        internal static bool allowMedsTimed;
-        internal static bool removeMeds;
-        internal static bool enableNetworkingMeds;
-        internal static bool allowPlants;
-        internal static bool allowPlantsTimed;
-        internal static bool removePlants;
-        internal static bool enableNetworkingPlants;
-        internal static bool allowAmmunition;
-        internal static bool allowAmmunitionTimed;
-        internal static bool removeAmmunition;
-        internal static bool enableNetworkingAmmunition; 
-        internal static bool allowThrowables;
-        internal static bool allowThrowablesTimed;
-        internal static bool removeThrowables;
-        internal static bool enableNetworkingThrowables;
-        internal static bool allowExpendables;
-        internal static bool allowExpendablesTimed;
-        internal static bool removeExpendables;
-        internal static bool enableNetworkingExpendables; 
-        internal static bool allowBreakables;
-        internal static bool allowBreakablesTimed;
-        internal static bool removeBreakables;
-        internal static string allowList;
-        internal static string allowListTimed;
-        internal static string removeList;
-        internal static string networkList;
+        public static bool useTimerGlobal { get; private set; }
+        public static int timeInDays { get; private set; }
+        public static bool allowMelee { get; private set; }
+        public static bool allowMeleeTimed { get; private set; }
+        public static bool removeMelee{ get; private set; }
+        public static bool enableNetworkingMelee{ get; private set; } 
+        public static bool allowRanged{ get; private set; }
+        public static bool allowRangedTimed{ get; private set; }
+        public static bool removeRanged{ get; private set; }
+        public static bool enableNetworkingRanged{ get; private set; }
+        public static bool allowWeaponMods{ get; private set; }
+        public static bool allowWeaponModsTimed{ get; private set; }
+        public static bool removeWeaponMods{ get; private set; }
+        public static bool enableNetworkingWeaponMods{ get; private set; }
+        public static bool allowMaterials{ get; private set; }
+        public static bool allowMaterialsTimed{ get; private set; }
+        public static bool removeMaterials{ get; private set; }
+        public static bool enableNetworkingMaterials{ get; private set; } 
+        public static bool allowFood{ get; private set; }
+        public static bool allowFoodTimed{ get; private set; }
+        public static bool removeFood{ get; private set; }
+        public static bool enableNetworkingFood{ get; private set; } 
+        public static bool allowMeds{ get; private set; }
+        public static bool allowMedsTimed{ get; private set; }
+        public static bool removeMeds{ get; private set; }
+        public static bool enableNetworkingMeds{ get; private set; }
+        public static bool allowPlants{ get; private set; }
+        public static bool allowPlantsTimed{ get; private set; }
+        public static bool removePlants{ get; private set; }
+        public static bool enableNetworkingPlants{ get; private set; }
+        public static bool allowAmmunition{ get; private set; }
+        public static bool allowAmmunitionTimed{ get; private set; }
+        public static bool removeAmmunition{ get; private set; }
+        public static bool enableNetworkingAmmunition{ get; private set; } 
+        public static bool allowThrowables{ get; private set; }
+        public static bool allowThrowablesTimed{ get; private set; }
+        public static bool removeThrowables{ get; private set; }
+        public static bool enableNetworkingThrowables{ get; private set; }
+        public static bool allowExpendables{ get; private set; }
+        public static bool allowExpendablesTimed{ get; private set; }
+        public static bool removeExpendables{ get; private set; }
+        public static bool enableNetworkingExpendables{ get; private set; } 
+        public static bool allowBreakables{ get; private set; }
+        public static bool allowBreakablesTimed{ get; private set; }
+        public static bool enableNetworkingBreakables { get; private set; }
+        public static string allowList { get; private set; } = "";
+        public static string allowListTimed{ get; private set; } = "";
+        public static string removeList{ get; private set; } = "";
+        public static string networkList{ get; private set; } = "";
 
         public static bool ShouldIdBeRemoved(int ItemId)
         {
@@ -141,6 +141,11 @@ namespace LootRespawnControl
             return allowBreakables;
         }
 
+        public static bool IsBreakablesNetworked()
+        {
+            return enableNetworkingBreakables;
+        }
+
         public static bool IsGlobalTimerEnabled()
         {
             return useTimerGlobal;
@@ -148,59 +153,66 @@ namespace LootRespawnControl
 
         public static void SetLocalConfigValues()
         {
-            useTimerGlobal = Config.useTimerGlobal.Value;
-            timeInDays = Config.timeInDays.Value;
-            allowMelee = Config.allowMelee.Value;
-            allowMeleeTimed = Config.allowMeleeTimed.Value;
-            removeMelee = Config.removeMelee.Value;
-            enableNetworkingMelee = Config.enableNetworkingMelee.Value;
-            allowRanged = Config.allowRanged.Value;
-            allowRangedTimed = Config.allowRangedTimed.Value;
-            removeRanged = Config.removeRanged.Value;
-            enableNetworkingRanged = Config.enableNetworkingRanged.Value; 
-            allowWeaponMods = Config.allowWeaponMods.Value;
-            allowWeaponModsTimed = Config.allowWeaponModsTimed.Value;
-            removeWeaponMods = Config.removeWeaponMods.Value;
-            enableNetworkingWeaponMods = Config.enableNetworkingWeaponMods.Value;
-            allowMaterials = Config.allowMaterials.Value;
-            allowMaterialsTimed = Config.allowMaterialsTimed.Value;
-            removeMaterials = Config.removeMaterials.Value;
-            enableNetworkingMaterials = Config.enableNetworkingMaterials.Value; 
-            allowFood = Config.allowFood.Value;
-            allowFoodTimed = Config.allowFoodTimed.Value;
-            removeFood = Config.removeFood.Value;
-            enableNetworkingFood = Config.enableNetworkingFood.Value;
-            allowMeds = Config.allowMeds.Value;
-            allowMedsTimed = Config.allowMedsTimed.Value;
-            removeMeds = Config.removeMeds.Value;
-            enableNetworkingMeds = Config.enableNetworkingMeds.Value;
-            allowPlants = Config.allowPlants.Value;
-            allowPlantsTimed = Config.allowPlantsTimed.Value;
-            removePlants = Config.removePlants.Value;
-            enableNetworkingPlants = Config.enableNetworkingPlants.Value;
-            allowAmmunition = Config.allowAmmunition.Value;
-            allowAmmunitionTimed = Config.allowAmmunitionTimed.Value;
-            removeAmmunition = Config.removeAmmunition.Value;
-            enableNetworkingAmmunition = Config.enableNetworkingAmmunition.Value;
-            allowThrowables = Config.allowThrowables.Value;
-            allowThrowablesTimed = Config.allowThrowablesTimed.Value;
-            removeThrowables = Config.removeThrowables.Value;
-            enableNetworkingThrowables = Config.enableNetworkingThrowables.Value;
-            allowExpendables = Config.allowExpendables.Value;
-            allowExpendablesTimed = Config.allowExpendablesTimed.Value;
-            removeExpendables = Config.removeExpendables.Value;
-            enableNetworkingExpendables = Config.enableNetworkingExpendables.Value;
-            allowBreakables = Config.allowBreakables.Value;
-            allowBreakablesTimed = Config.allowBreakablesTimed.Value;
-            allowList = Config.allowList.Value;
-            allowListTimed = Config.allowListTimed.Value;
-            networkList = Config.networkList.Value;
-            removeList = Config.removeList.Value;
+            Dictionary<string, string> configManagerFields = GetConfigManagerFields();
+            Dictionary<string, string> configFields = Config.GetLocalConfigFields();
+
+            RLog.Msg($"ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
+            foreach (var kvp in configManagerFields)
+            {
+                if (configFields.ContainsKey(kvp.Key))
+                {
+                    PropertyInfo configManagerProperty = typeof(ConfigManager).GetProperty(kvp.Key, BindingFlags.Static | BindingFlags.Public);
+
+                    if (configManagerProperty != null)
+                    {
+                        try
+                        {
+                            string configValueString = configFields[kvp.Key];
+                            object convertedValue = Convert.ChangeType(configValueString, configManagerProperty.PropertyType);
+                            configManagerProperty.SetValue(null, convertedValue);
+                            RLog.Msg($"Synced {kvp.Key} to {convertedValue}");
+                        }
+                        catch (Exception ex)
+                        {
+                            RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        RLog.Msg($"Property {kvp.Key} not found in ConfigManager.");
+                    }
+                }
+                else
+                {
+                    RLog.Msg($"Config does not contain field: {kvp.Key}");
+                }
+            }
 
             LootRespawnControl.CustomWhitelist = LootRespawnControl.ExtractIds(allowList);
             LootRespawnControl.CustomWhitelistTimed = LootRespawnControl.ExtractIds(allowListTimed);
             LootRespawnControl.CustomBlacklist = LootRespawnControl.ExtractIds(removeList);
             LootRespawnControl.CustomNetworkingList = LootRespawnControl.ExtractIds(networkList);
+        }
+
+        public static Dictionary<string, string> GetConfigManagerFields()
+        {
+            Dictionary<string, string> configValues = new Dictionary<string, string>();
+            StringBuilder sb = new StringBuilder();
+            Type configType = typeof(ConfigManager);
+            foreach (var property in configType.GetProperties(BindingFlags.Static | BindingFlags.Public))
+            {
+                try
+                {
+                    object value = property.GetValue(null);
+                    configValues.Add(property.Name, value.ToString());
+                    RLog.Msg($"Found internal value {property.Name} = {value}");
+                }
+                catch (Exception ex)
+                {
+                    RLog.Msg($"Error getting property {property.Name}: {ex.Message}");
+                }
+            }
+            return configValues;
         }
 
         public static void DeserializeConfig(string serializedConfig)
@@ -210,6 +222,7 @@ namespace LootRespawnControl
                 return; // Nothing to deserialize
             }
 
+            Dictionary<string, string> recievedValues = new Dictionary<string, string>();
             string[] configPairs = serializedConfig.Split(';');
 
             foreach (string pair in configPairs)
@@ -222,162 +235,38 @@ namespace LootRespawnControl
                 string fieldName = parts[0].Trim();
                 string valueString = parts[1].Trim();
                 RLog.Msg($"Switching {fieldName} to {valueString}");
-                switch (fieldName)
+                recievedValues.Add(fieldName, valueString);
+            }
+
+            Dictionary<string, string> configManagerFields = GetConfigManagerFields();
+            foreach (var kvp in configManagerFields)
+            {
+                if (recievedValues.ContainsKey(kvp.Key))
                 {
-                    case "useTimerGlobal":
-                        useTimerGlobal = bool.Parse(valueString);
-                        break;
-                    case "timeInDays":
-                        timeInDays = int.Parse(valueString);
-                        break;
-                    case "allowMelee":
-                        allowMelee = bool.Parse(valueString);
-                        break;
-                    case "allowMeleeTimed":
-                        allowMeleeTimed = bool.Parse(valueString);
-                        break;
-                    case "removeMelee":
-                        removeMelee = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingMelee": 
-                        enableNetworkingMelee = bool.Parse(valueString);
-                        break;
-                    case "allowRanged":
-                        allowRanged = bool.Parse(valueString);
-                        break;
-                    case "allowRangedTimed":
-                        allowRangedTimed = bool.Parse(valueString);
-                        break;
-                    case "removeRanged":
-                        removeRanged = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingRanged": 
-                        enableNetworkingRanged = bool.Parse(valueString);
-                        break;
-                    case "allowWeaponMods":
-                        allowWeaponMods = bool.Parse(valueString);
-                        break;
-                    case "allowWeaponModsTimed":
-                        allowWeaponModsTimed = bool.Parse(valueString);
-                        break;
-                    case "removeWeaponMods":
-                        removeWeaponMods = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingWeaponMods": 
-                        enableNetworkingWeaponMods = bool.Parse(valueString);
-                        break;
-                    case "allowMaterials":
-                        allowMaterials = bool.Parse(valueString);
-                        break;
-                    case "allowMaterialsTimed":
-                        allowMaterialsTimed = bool.Parse(valueString);
-                        break;
-                    case "removeMaterials":
-                        removeMaterials = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingMaterials": 
-                        enableNetworkingMaterials = bool.Parse(valueString);
-                        break;
-                    case "allowFood":
-                        allowFood = bool.Parse(valueString);
-                        break;
-                    case "allowFoodTimed":
-                        allowFoodTimed = bool.Parse(valueString);
-                        break;
-                    case "removeFood":
-                        removeFood = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingFood": 
-                        enableNetworkingFood = bool.Parse(valueString);
-                        break;
-                    case "allowMeds":
-                        allowMeds = bool.Parse(valueString);
-                        break;
-                    case "allowMedsTimed":
-                        allowMedsTimed = bool.Parse(valueString);
-                        break;
-                    case "removeMeds":
-                        removeMeds = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingMeds": 
-                        enableNetworkingMeds = bool.Parse(valueString);
-                        break;
-                    case "allowPlants":
-                        allowPlants = bool.Parse(valueString);
-                        break;
-                    case "allowPlantsTimed":
-                        allowPlantsTimed = bool.Parse(valueString);
-                        break;
-                    case "removePlants":
-                        removePlants = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingPlants": 
-                        enableNetworkingPlants = bool.Parse(valueString);
-                        break;
-                    case "allowAmmunition":
-                        allowAmmunition = bool.Parse(valueString);
-                        break;
-                    case "allowAmmunitionTimed":
-                        allowAmmunitionTimed = bool.Parse(valueString);
-                        break;
-                    case "removeAmmunition":
-                        removeAmmunition = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingAmmunition": 
-                        enableNetworkingAmmunition = bool.Parse(valueString);
-                        break;
-                    case "allowThrowables":
-                        allowThrowables = bool.Parse(valueString);
-                        break;
-                    case "allowThrowablesTimed":
-                        allowThrowablesTimed = bool.Parse(valueString);
-                        break;
-                    case "removeThrowables":
-                        removeThrowables = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingThrowables": 
-                        enableNetworkingThrowables = bool.Parse(valueString);
-                        break;
-                    case "allowExpendables":
-                        allowExpendables = bool.Parse(valueString);
-                        break;
-                    case "allowExpendablesTimed":
-                        allowExpendablesTimed = bool.Parse(valueString);
-                        break;
-                    case "removeExpendables":
-                        removeExpendables = bool.Parse(valueString);
-                        break;
-                    case "enableNetworkingExpendables": 
-                        enableNetworkingExpendables = bool.Parse(valueString);
-                        break;
-                    case "allowBreakables":
-                        allowBreakables = bool.Parse(valueString);
-                        break;
-                    case "allowBreakablesTimed":
-                        allowBreakablesTimed = bool.Parse(valueString);
-                        break;
-                    case "removeBreakables":
-                        removeBreakables = bool.Parse(valueString);
-                        break;
-                    case "allowList":
-                        allowList = valueString;
-                        LootRespawnControl.CustomWhitelist = LootRespawnControl.ExtractIds(allowList);
-                        break;
-                    case "allowListTimed":
-                        allowListTimed = valueString;
-                        LootRespawnControl.CustomWhitelistTimed = LootRespawnControl.ExtractIds(allowListTimed);
-                        break;
-                    case "removeList":
-                        removeList = valueString;
-                        LootRespawnControl.CustomBlacklist = LootRespawnControl.ExtractIds(removeList);
-                        break;
-                    case "networkList":
-                        networkList = valueString;
-                        LootRespawnControl.CustomNetworkingList = LootRespawnControl.ExtractIds(networkList);
-                        break;
-                    default:
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Could not find config entry {fieldName}"); }
-                        break;
+                    PropertyInfo configManagerProperty = typeof(ConfigManager).GetProperty(kvp.Key, BindingFlags.Static | BindingFlags.Public);
+
+                    if (configManagerProperty != null)
+                    {
+                        try
+                        {
+                            string configValueString = recievedValues[kvp.Key];
+                            object convertedValue = Convert.ChangeType(configValueString, configManagerProperty.PropertyType);
+                            configManagerProperty.SetValue(null, convertedValue);
+                            RLog.Msg($"Synced {kvp.Key} to {convertedValue}");
+                        }
+                        catch (Exception ex)
+                        {
+                            RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        RLog.Msg($"Property {kvp.Key} not found in ConfigManager.");
+                    }
+                }
+                else
+                {
+                    RLog.Msg($"Config does not contain field: {kvp.Key}");
                 }
             }
         }

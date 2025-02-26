@@ -177,7 +177,7 @@ namespace LootRespawnControl
 
         private void KickPlayer(BoltConnection connection)
         {
-            connection.Disconnect(new CoopKickToken { Banned = true, KickMessage = "HOST_BANNED_YOU" }.Cast<IProtocolToken>());
+            connection.Disconnect(new CoopKickToken { Banned = true, KickMessage = "HOST_KICKED_YOU" }.Cast<IProtocolToken>());
         }
     }
 

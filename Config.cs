@@ -64,6 +64,7 @@ public static class Config
 
     public static ConfigEntry<bool> allowBreakables { get; private set; }
     public static ConfigEntry<bool> allowBreakablesTimed { get; private set; }
+    public static ConfigEntry<bool> enableNetworkingBreakables { get; private set; }
 
     public static ConfigEntry<string> allowList { get; private set; }
     public static ConfigEntry<string> allowListTimed { get; private set; }
@@ -377,6 +378,12 @@ public static class Config
             "Allow Breakables to respawn with the Timer",
             "Allows breakable objects to respawn (Laptops, Gore Vases...)");
 
+        enableNetworkingBreakables = Category.CreateEntry( // New
+            "NetworkBreakables",
+            false,
+            "Sync Breakables",
+            "Will synchronize destruction of breakables in multiplayer (Laptops, Gore Vases...)");
+
         Category = ConfigSystem.CreateFileCategory("Custom Options", "Custom Options", "LootRespawnControl.cfg");
 
         allowList = Category.CreateEntry(
@@ -440,5 +447,24 @@ public static class Config
             }
         }
         return sb.ToString();
+    }
+
+    public static Dictionary<string, string> GetLocalConfigFields()
+    {
+        Dictionary<string, string> configValues = new Dictionary<string, string>();
+        Type configType = typeof(Config);
+
+        foreach (var property in configType.GetProperties(BindingFlags.Static | BindingFlags.Public))
+        {
+            if (property.PropertyType.IsGenericType && property.PropertyType.GetGenericTypeDefinition() == typeof(ConfigEntry<>))
+            {
+                object configEntry = property.GetValue(null);
+                string configEntryName = property.Name;
+                object value = configEntry.GetType().GetProperty("Value").GetValue(configEntry);
+                RLog.Msg($"Found local value {configEntryName} = {value}");
+                configValues.Add(configEntryName, value.ToString());
+            }
+        }
+        return configValues;
     }
 }
