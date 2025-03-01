@@ -27,10 +27,7 @@ namespace LootRespawnControl
         public override void Connected(BoltConnection connection)
         {
             if (!Config.enableMultiplayer.Value) { return; }
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg("Player connected");
-            }
+            if (Config.ConsoleLogging.Value){ RLog.Msg("Player connected, SteamID: " + MultiplayerUtilities.GetSteamId(connection)); }
             NetworkManager.SendLootData(connection);
         }
     }
@@ -79,17 +76,16 @@ namespace LootRespawnControl
             string configData = packet.ReadString(); // Read the message string
 
             // Now you have both receivedLootData and message
-            HandleReceivedData(receivedLootData, configData);
+            HandleReceivedData(receivedLootData, configData, fromConnection);
         }
 
-        private void HandleReceivedData(HashSet<LootData> receivedLootData, string configData)
+        private void HandleReceivedData(HashSet<LootData> receivedLootData, string configData, BoltConnection target)
         {
             if (Config.ConsoleLogging.Value)
             {
                 RLog.Msg("Received Loot Data");
             }
            
-
             LootRespawnManager.collectedLootIds = receivedLootData;
 
             // Do something with the message, e.g., deserialize it
@@ -99,8 +95,7 @@ namespace LootRespawnControl
                 RLog.Msg("Recieved Config Data: " + configData);
             }
             
-
-            NetworkManager.SendLootSyncConfirmation(LootRespawnControl._modVersion);
+            NetworkManager.SendLootSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
         }
     }
 
@@ -110,25 +105,26 @@ namespace LootRespawnControl
         private Dictionary<ulong, float> connectionTimers = new Dictionary<ulong, float>();
         private float timeoutDuration = 20f;
 
-        public void Send(string modVersion, GlobalTargets target = GlobalTargets.Everyone)
+        public void Send(string modVersion, ulong targetId)
         {
-            var packet = NewPacket(modVersion.Length * 2, target);
+            var packet = NewPacket(modVersion.Length * 2, GlobalTargets.Everyone);
             packet.Packet.WriteString(modVersion);
             Send(packet);
+            RLog.Msg($"Sent confirmation with mod version: {modVersion}");
         }
 
         private void HandleReceivedConfirmation(string receivedModVersion, BoltConnection connection)
         {
             if (Config.ConsoleLogging.Value)
             {
-                RLog.Msg($"Received confirmation with mod version: {receivedModVersion}");
+                RLog.Msg($"Received confirmation with mod version: {receivedModVersion}   from: " + MultiplayerUtilities.GetSteamId(connection));
             }
             
             if (LootRespawnControl._modVersion != receivedModVersion)
             {
                 if (Config.ConsoleLogging.Value)
                 {
-                    RLog.Msg($"Kicking player due to mismatching version: {receivedModVersion}");
+                    RLog.Msg($"Kicking player due to mismatching version: {receivedModVersion}  SteamID:" + MultiplayerUtilities.GetSteamId(connection));
                 }
                 KickPlayer(connection);
             }
@@ -136,7 +132,7 @@ namespace LootRespawnControl
             {
                 if (Config.ConsoleLogging.Value)
                 {
-                    RLog.Msg("Loot Sync Confirmed");
+                    RLog.Msg("Loot Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
                 }
                 
                 connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
@@ -162,7 +158,7 @@ namespace LootRespawnControl
             {
                 if (Config.ConsoleLogging.Value)
                 {
-                    RLog.Msg($"Kicked connecting player due to timeout!" + connectionId);
+                    RLog.Msg($"Kicked connecting player due to timeout! " + connectionId);
                 }
                 KickPlayer(MultiplayerUtilities.GetConnectionFromSteamId(connectionId));
                 connectionTimers.Remove(connectionId);
@@ -172,6 +168,7 @@ namespace LootRespawnControl
         public override void Read(UdpPacket packet, BoltConnection fromConnection)
         {
             var receivedModVersion = packet.ReadString();
+            if (!BoltNetwork.isServerOrNotRunning) { return; }
             HandleReceivedConfirmation(receivedModVersion, fromConnection);
         }
 
@@ -207,7 +204,7 @@ namespace LootRespawnControl
                 RLog.Msg($"Received Pickup: {pickupName}, Hash: {pickupHash}, Time: {time}");
             }
             
-            LootRespawnControl.HandlePickupDataRecieved(pickupName, pickupHash);
+            LootRespawnControl.HandlePickupDataRecieved(pickupName, pickupHash, time);
         }
 
         public override void Read(UdpPacket packet, BoltConnection fromConnection)
@@ -244,9 +241,9 @@ namespace LootRespawnControl
             _lootSyncConfirmationEvent.StartTimer(connection);
         }
 
-        public static void SendLootSyncConfirmation(string modVersion)
+        public static void SendLootSyncConfirmation(string modVersion, ulong targetId)
         {
-            _lootSyncConfirmationEvent.Send(modVersion);
+            _lootSyncConfirmationEvent.Send(modVersion, targetId);
         }
 
         private static HashSet<LootData> GetHostLootData()

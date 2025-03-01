@@ -255,12 +255,8 @@ public class LootRespawnControl : SonsMod
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
                 if (PickupGui == null)
                 {
-                    if (Config.ConsoleLogging.Value)
-                    {
-                        RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return;
-                    }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return;}
                 }
-
 
                 if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
@@ -271,6 +267,7 @@ public class LootRespawnControl : SonsMod
                 if (ConfigManager.IsGlobalTimerEnabled() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId) && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
                     return;
                 }
                 if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
@@ -299,6 +296,7 @@ public class LootRespawnControl : SonsMod
                 if (ConfigManager.IsGlobalTimerEnabled() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
                     return;
                 }
 
@@ -306,6 +304,7 @@ public class LootRespawnControl : SonsMod
                 if(ConfigManager.IsBreakableAllowed() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
                     return;
                 }
 
@@ -345,6 +344,7 @@ public class LootRespawnControl : SonsMod
             if (LootRespawnManager.IsLootCollected(identifier))
             {
                 LootRespawnManager.RemoveLootFromCollected(identifier);
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed Loot From collected: {__instance.name}"); return; }
             }
         }
     }
@@ -370,7 +370,7 @@ public class LootRespawnControl : SonsMod
                 if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
                 
                 LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
                 return;
             }
             if (PickUpArrayLength > 0 && !ConfigManager.IsBreakableAllowed())
@@ -393,7 +393,7 @@ public class LootRespawnControl : SonsMod
                 {
                     //if not blacklisted and only includes pickup components store the hash
                     LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
                 }
                 return;
             }
@@ -404,18 +404,27 @@ public class LootRespawnControl : SonsMod
         }
     }
 
-    public static void HandlePickupDataRecieved(string objectName, string identifier)
+    public static void HandlePickupDataRecieved(string objectName, string identifier, long timestamp)
     {
         if(objectName != null)
         {
             GameObject pickupObject = GameObject.Find(objectName);
             if (pickupObject != null)
             {
-                GameObject.Destroy(pickupObject);
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Found {pickupObject} destroying..."); }
+                LootIdentifier lootIdentifier = pickupObject.GetComponent<LootIdentifier>();
+                if (lootIdentifier != null && lootIdentifier.Identifier == identifier)
+                {
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Found {objectName} destroying..."); }
+                    GameObject.Destroy(pickupObject);
+                }
+                else
+                {
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Unable to find {objectName} with correct identifier!"); }
+                }
             }
         }
-        MarkLootAsCollected(identifier);
+        if (Config.ConsoleLogging.Value) { RLog.Msg($"Added loot from recieved packet: Name: {objectName} Identifier: {identifier} Timestamp: {timestamp}"); }
+        MarkLootAsCollected(identifier, null, 0, false, timestamp);
     }
 
     public static long GetTimestampFromGameTime(string gameTimeString)
@@ -464,14 +473,6 @@ public class LootRespawnControl : SonsMod
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
     }
-
-    [DebugCommand("lrcnetserializetest")]
-    private void LRCNetSerializeTest()
-    {
-        string serializedData = Config.Serialize();
-        ConfigManager.DeserializeConfig(serializedData);
-        RLog.Msg("Done!");
-    }
 }
 public class LootRespawnManager
 {
@@ -516,15 +517,16 @@ public class LootRespawnManager
     {
         return collectedLootIds.Any(lootData => lootData.Hash == identifier);
     }
-
-    public static void MarkLootAsCollected(string identifier, string objectName = null, int itemId = 0, bool isBreakable  = false)
+    //MarkLootAsCollected(identifier, null, 0, false, timestamp);
+    public static void MarkLootAsCollected(string identifier, string objectName = null, int itemId = 0, bool isBreakable  = false, long timestamp = 0)
     {
-        long timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString());
+        if(timestamp == 0) { timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()); }
         collectedLootIds.Add(new LootData(identifier, timestamp));
         if(objectName != null || isBreakable)
         {
-            if (ConfigManager.ShouldIdBeNetworked(itemId) || isBreakable)
+            if (ConfigManager.ShouldIdBeNetworked(itemId) || isBreakable && ConfigManager.IsBreakablesNetworked())
             {
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Loot Pickup Event...: {objectName}"); }
                 NetworkManager.SendPickupEvent(objectName, identifier, timestamp);
             }
         }

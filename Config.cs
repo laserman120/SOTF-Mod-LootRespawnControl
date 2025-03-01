@@ -461,7 +461,6 @@ public static class Config
                 object configEntry = property.GetValue(null);
                 string configEntryName = property.Name;
                 object value = configEntry.GetType().GetProperty("Value").GetValue(configEntry);
-                RLog.Msg($"Found local value {configEntryName} = {value}");
                 configValues.Add(configEntryName, value.ToString());
             }
         }

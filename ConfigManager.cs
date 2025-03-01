@@ -133,9 +133,12 @@ namespace LootRespawnControl
             //Force no removal if whitelisted
             if (LootRespawnControl.CustomNetworkingList.Contains(ItemId)) { result = true; }
 
+            //If multiplayer disabled and the host then always return false
+            if(!Config.enableMultiplayer.Value && BoltNetwork.isServerOrNotRunning) { result = false;  }
+
             return result;
         }
-
+        
         public static bool IsBreakableAllowed()
         {
             return allowBreakables;
@@ -156,7 +159,7 @@ namespace LootRespawnControl
             Dictionary<string, string> configManagerFields = GetConfigManagerFields();
             Dictionary<string, string> configFields = Config.GetLocalConfigFields();
 
-            RLog.Msg($"ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
+            RLog.Msg($"Synchronizing to local Config! ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
             foreach (var kvp in configManagerFields)
             {
                 if (configFields.ContainsKey(kvp.Key))
@@ -170,21 +173,12 @@ namespace LootRespawnControl
                             string configValueString = configFields[kvp.Key];
                             object convertedValue = Convert.ChangeType(configValueString, configManagerProperty.PropertyType);
                             configManagerProperty.SetValue(null, convertedValue);
-                            RLog.Msg($"Synced {kvp.Key} to {convertedValue}");
                         }
                         catch (Exception ex)
                         {
                             RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
                         }
-                    }
-                    else
-                    {
-                        RLog.Msg($"Property {kvp.Key} not found in ConfigManager.");
-                    }
-                }
-                else
-                {
-                    RLog.Msg($"Config does not contain field: {kvp.Key}");
+                    } 
                 }
             }
 
@@ -205,7 +199,6 @@ namespace LootRespawnControl
                 {
                     object value = property.GetValue(null);
                     configValues.Add(property.Name, value.ToString());
-                    RLog.Msg($"Found internal value {property.Name} = {value}");
                 }
                 catch (Exception ex)
                 {
@@ -252,21 +245,12 @@ namespace LootRespawnControl
                             string configValueString = recievedValues[kvp.Key];
                             object convertedValue = Convert.ChangeType(configValueString, configManagerProperty.PropertyType);
                             configManagerProperty.SetValue(null, convertedValue);
-                            RLog.Msg($"Synced {kvp.Key} to {convertedValue}");
                         }
                         catch (Exception ex)
                         {
                             RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
                         }
                     }
-                    else
-                    {
-                        RLog.Msg($"Property {kvp.Key} not found in ConfigManager.");
-                    }
-                }
-                else
-                {
-                    RLog.Msg($"Config does not contain field: {kvp.Key}");
                 }
             }
         }
