@@ -102,4 +102,8 @@
         <None Remove="ReleaseBuild\**" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="LootData\" />
+    </ItemGroup>
+
 </Project>

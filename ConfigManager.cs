@@ -159,7 +159,10 @@ namespace LootRespawnControl
             Dictionary<string, string> configManagerFields = GetConfigManagerFields();
             Dictionary<string, string> configFields = Config.GetLocalConfigFields();
 
-            RLog.Msg($"Synchronizing to local Config! ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
+            if (Config.ConsoleLogging.Value)
+            {
+                RLog.Msg($"Synchronizing to local Config! ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
+            }
             foreach (var kvp in configManagerFields)
             {
                 if (configFields.ContainsKey(kvp.Key))
@@ -227,7 +230,6 @@ namespace LootRespawnControl
 
                 string fieldName = parts[0].Trim();
                 string valueString = parts[1].Trim();
-                RLog.Msg($"Switching {fieldName} to {valueString}");
                 recievedValues.Add(fieldName, valueString);
             }
 

@@ -14,7 +14,7 @@ using Sons.Gameplay;
 using static LootRespawnControl.LootRespawnSaveManager;
 using SUI;
 using Sons.Environment;
-using static LootRespawnControl.LootRespawnManager;
+using static LootRespawnControl.LootManager;
 using UnityEngine.SceneManagement;
 using Sons.Utilities;
 using Endnight.Utilities;
@@ -22,6 +22,7 @@ using UnityEngine.Windows;
 using SonsSdk.Networking;
 using static SonsSdk.ItemTools;
 using System.Security.AccessControl;
+using static LootRespawnControl.LootManager.LootRespawnManager;
 
 namespace LootRespawnControl;
 
@@ -180,6 +181,10 @@ public class LootRespawnControl : SonsMod
 
     public static string _modVersion;
 
+    public static int _breakableId = 9999;
+
+    public static List<KeyValuePair<string, bool?>> pickupsAwaitingReply = new List<KeyValuePair<string, bool?>>();
+
     public LootRespawnControl()
     {
         HarmonyPatchAll = true;
@@ -193,8 +198,6 @@ public class LootRespawnControl : SonsMod
         CustomWhitelistTimed = ExtractIds(Config.allowListTimed.Value);
         CustomBlacklist = ExtractIds(Config.removeList.Value);
         CustomNetworkingList = ExtractIds(Config.networkList.Value);
-
-        
 
         NetworkManager.RegisterPackets();
         _modVersion = Manifest.Version;
@@ -241,170 +244,7 @@ public class LootRespawnControl : SonsMod
         }
     }
 
-    //Patch the spawning of pickups
-    [HarmonyPatch(typeof(Sons.Gameplay.PickUp), "Awake")]
-    private static class PickUpAwakePatch
-    {
-        private static void Postfix(Sons.Gameplay.PickUp __instance)
-        {
-            LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
-            string identifier = identifierComponent.Identifier;
-
-            if (ConfigManager.IsItemIdBlocked(__instance._itemId))
-            {
-                Transform PickupGui = __instance.transform.Find("_PickupGui_");
-                if (PickupGui == null)
-                {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return;}
-                }
-
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
-                UnityEngine.Object.Destroy(__instance._destroyTarget);
-            }
-
-            if (LootRespawnManager.IsLootCollected(identifier) && ConfigManager.ShouldIdBeRemoved(__instance._itemId))
-            {
-                if (ConfigManager.IsGlobalTimerEnabled() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId) && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                {
-                    LootRespawnManager.RemoveLootFromCollected(identifier);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
-                    return;
-                }
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
-                UnityEngine.Object.Destroy(__instance._destroyTarget);
-            }
-        }
-    }
-
-    //Patch the spawning of breakables
-    [HarmonyPatch(typeof(Sons.Gameplay.BreakableObject), "Awake")]
-    private static class BreakableObjectAwakePatch
-    {
-        private static void Postfix(Sons.Gameplay.BreakableObject __instance)
-        {
-            LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
-            string identifier = identifierComponent.Identifier;
-
-            if (LootRespawnManager.IsLootCollected(identifier) && !ConfigManager.IsBreakableAllowed())
-            {
-                if (__instance.transform.name.Contains("BreakableSticksInteraction"))
-                {
-                    RLog.Warning("Attempted to remove BreakableSticksInteraction! Returning out...");
-                    return;
-                }
-
-                if (ConfigManager.IsGlobalTimerEnabled() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                {
-                    LootRespawnManager.RemoveLootFromCollected(identifier);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
-                    return;
-                }
-
-                //if breakable category is allowe timed, remove it
-                if(ConfigManager.IsBreakableAllowed() && HasEnoughTimePassed(identifier, GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                {
-                    LootRespawnManager.RemoveLootFromCollected(identifier);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
-                    return;
-                }
-
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
-                UnityEngine.Object.Destroy(__instance.transform.gameObject);
-            }
-        }
-    }
-
-    //runs whenever a pickup is collected
-    [HarmonyPatch(typeof(Sons.Gameplay.PickUp), "Collect")]
-    private static class CollectPatch
-    {
-        private static void Postfix(Sons.Gameplay.PickUp __instance)
-        {
-            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-            if (identifierComponent == null) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing IdentifierComponent"); } return; }
-
-            //hotfix for interaction components which also feature a pickup component of any type
-            Transform PickupGui = __instance.transform.Find("_PickupGui_");
-            if(PickupGui == null)
-            {
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return; }
-            }
-
-            if (__instance.name.Contains("Clone")) { return; }
-
-            string identifier = identifierComponent.Identifier;
-            
-            if(ConfigManager.ShouldIdBeRemoved(__instance._itemId))
-            {
-                LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
-                return;
-            }
-            
-            if (LootRespawnManager.IsLootCollected(identifier))
-            {
-                LootRespawnManager.RemoveLootFromCollected(identifier);
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed Loot From collected: {__instance.name}"); return; }
-            }
-        }
-    }
-
-    //runs whenever a breakable object is broken
-    [HarmonyPatch(typeof(Sons.Gameplay.BreakableObject), "OnBreak")]
-    private static class OnBreakPatch
-    {
-        private static void Postfix(Sons.Gameplay.BreakableObject __instance)
-        {
-            LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-            if(identifierComponent == null) { return; }
-            if (__instance.name.Contains("Clone")) { return; }
-
-            string identifier = identifierComponent.Identifier;
-
-            //Pickup is a simple item spawner on broken
-            PickUp PickUp = __instance._brokenPrefab?.transform.GetComponent<PickUp>() ?? null;
-            int PickUpArrayLength = __instance._spawnDefinitions.Count;
-            if (PickUp != null && !ConfigManager.IsBreakableAllowed())
-            {
-                //return out if blacklisted item would be dropped
-                if (ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
-                
-                LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
-                return;
-            }
-            if (PickUpArrayLength > 0 && !ConfigManager.IsBreakableAllowed())
-            {
-                bool HasBlacklisted = false;
-                Il2CppSystem.Collections.Generic.List<BreakableObject.SpawnDefinition> SpawnDefinitions = __instance._spawnDefinitions;
-                //Iterate over the pick up array and check if any of the items are blacklisted
-                for (int i = 0; i < PickUpArrayLength; i++)
-                {
-                    PickUp PickUpComponent = SpawnDefinitions[i]._prefab?.transform.GetComponent<PickUp>() ?? null;
-                    if (PickUpComponent == null || ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
-                    {
-                        //if any is blacklisted set true and break out of loop
-                        HasBlacklisted = true;
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist or empty pickup component in array: : {__instance.name}"); }
-                        break;
-                    }
-                }
-                if (!HasBlacklisted)
-                {
-                    //if not blacklisted and only includes pickup components store the hash
-                    LootRespawnManager.MarkLootAsCollected(identifier, null, 0, true);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
-                }
-                return;
-            }
-            if (LootRespawnManager.IsLootCollected(identifier))
-            {
-                LootRespawnManager.RemoveLootFromCollected(identifier);
-            }
-        }
-    }
-
-    public static void HandlePickupDataRecieved(string objectName, string identifier, long timestamp)
+    public static void HandlePickupDataRecieved(string objectName, string identifier, int pickupId, long timestamp)
     {
         if(objectName != null)
         {
@@ -424,7 +264,7 @@ public class LootRespawnControl : SonsMod
             }
         }
         if (Config.ConsoleLogging.Value) { RLog.Msg($"Added loot from recieved packet: Name: {objectName} Identifier: {identifier} Timestamp: {timestamp}"); }
-        MarkLootAsCollected(identifier, null, 0, false, timestamp);
+        MarkLootAsCollected(identifier, null, pickupId, false, timestamp);
     }
 
     public static long GetTimestampFromGameTime(string gameTimeString)
@@ -474,102 +314,7 @@ public class LootRespawnControl : SonsMod
         SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
     }
 }
-public class LootRespawnManager
-{
-    public static HashSet<LootData> collectedLootIds = new HashSet<LootData>();
 
-    public static string GenerateLootID(Vector3 position, Quaternion rotation)
-    {
-        string combinedString = $"{position.x:F6}-{position.y:F6}-{position.z:F6}-{rotation.x:F6}-{rotation.y:F6}-{rotation.z:F6}-{rotation.w:F6}";
-        using (MD5 md5Hash = MD5.Create())
-        {
-            byte[] bytes = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(combinedString));
-            // Convert the byte array to hexadecimal string
-            StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < bytes.Length; i++)
-            {
-                builder.Append(bytes[i].ToString("x2"));
-            }
-
-            
-            return builder.ToString();
-        }
-    }
-
-    public static string SaveCollectedLoot()
-    {
-        var serializableSet = new SerializableHashSet<LootData>(LootRespawnManager.collectedLootIds);
-        return JsonConvert.SerializeObject(serializableSet);
-    }
-
-    public static void LoadCollectedLoot(string jsonData)
-    {
-        if(jsonData == null) {
-            LootRespawnManager.collectedLootIds = new HashSet<LootData>();
-            return; }
-        var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
-        
-        LootRespawnManager.collectedLootIds = serializableSet.ToHashSet();
-    }
-
-
-    public static bool IsLootCollected(string identifier)
-    {
-        return collectedLootIds.Any(lootData => lootData.Hash == identifier);
-    }
-    //MarkLootAsCollected(identifier, null, 0, false, timestamp);
-    public static void MarkLootAsCollected(string identifier, string objectName = null, int itemId = 0, bool isBreakable  = false, long timestamp = 0)
-    {
-        if(timestamp == 0) { timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()); }
-        collectedLootIds.Add(new LootData(identifier, timestamp));
-        if(objectName != null || isBreakable)
-        {
-            if (ConfigManager.ShouldIdBeNetworked(itemId) || isBreakable && ConfigManager.IsBreakablesNetworked())
-            {
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Loot Pickup Event...: {objectName}"); }
-                NetworkManager.SendPickupEvent(objectName, identifier, timestamp);
-            }
-        }
-    }
-
-    public static void RemoveLootFromCollected(string identifier)
-    {
-        collectedLootIds.RemoveWhere(lootData => lootData.Hash == identifier);
-    }
-
-    public static long? GetLootTimestamp(string identifier)
-    {
-        LootData lootData = collectedLootIds.FirstOrDefault(ld => ld.Hash == identifier);
-        return lootData != null ? lootData.Timestamp : null;
-    }
-
-    public class LootData
-    {
-        public string Hash { get; set; }
-        public long Timestamp { get; set; }
-
-        public LootData(string hash, long timestamp)
-        {
-            Hash = hash;
-            Timestamp = timestamp;
-        }
-    }
-
-    [Serializable]
-    public class SerializableHashSet<T>
-    {
-        public List<T> list;
-        public SerializableHashSet() { }
-        public SerializableHashSet(HashSet<T> hashSet)
-        {
-            list = new List<T>(hashSet);
-        }
-        public HashSet<T> ToHashSet()
-        {
-            return new HashSet<T>(list);
-        }
-    }
-}
 
 [RegisterTypeInIl2Cpp]
 public class LootIdentifier : MonoBehaviour

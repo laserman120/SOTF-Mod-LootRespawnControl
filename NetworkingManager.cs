@@ -7,10 +7,14 @@ using Sons.Multiplayer;
 using SonsSdk.Networking;
 using UdpKit;
 using UnityEngine;
-using static LootRespawnControl.LootRespawnManager;
+using static LootRespawnControl.LootManager;
+using static LootRespawnControl.LootManager.LootRespawnManager;
+using static LootRespawnControl.Networking.PickupEvent;
+using static LootRespawnControl.Networking.PlayerJoin;
 
 namespace LootRespawnControl
 {
+    //Global Event Listener
     [RegisterTypeInIl2Cpp]
     public class EventHandler : GlobalEventListener
     {
@@ -32,206 +36,28 @@ namespace LootRespawnControl
         }
     }
 
-    internal class LootDataEvent : Packets.NetEvent
-    {
-        public override string Id => "LootSync_LootDataEvent";
-
-        public void Send(HashSet<LootData> lootData, string configData, BoltConnection connection)
-        {
-            int packetSize = sizeof(int) +  // Number of loot data entries
-                            sizeof(int);  // Length of the message string
-
-            foreach (var data in lootData)
-            {
-                packetSize += data.Hash.Length * 2 + 8; // Hash length * 2 (UTF-16) + long timestamp
-            }
-
-            packetSize += configData.Length * 2; // Message length * 2 (UTF-16) 
-
-            var packet = NewPacket(packetSize, connection);
-
-            packet.Packet.WriteInt(lootData.Count);
-            foreach (var data in lootData)
-            {
-                packet.Packet.WriteString(data.Hash);
-                packet.Packet.WriteLong(data.Timestamp);
-            }
-
-            packet.Packet.WriteString(configData); // Write the message string
-
-            Send(packet);
-        }
-
-        public override void Read(UdpPacket packet, BoltConnection fromConnection)
-        {
-            int count = packet.ReadInt();
-            HashSet<LootData> receivedLootData = new HashSet<LootData>();
-            for (int i = 0; i < count; i++)
-            {
-                string hash = packet.ReadString();
-                long timestamp = packet.ReadLong();
-                receivedLootData.Add(new LootData(hash, timestamp));
-            }
-
-            string configData = packet.ReadString(); // Read the message string
-
-            // Now you have both receivedLootData and message
-            HandleReceivedData(receivedLootData, configData, fromConnection);
-        }
-
-        private void HandleReceivedData(HashSet<LootData> receivedLootData, string configData, BoltConnection target)
-        {
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg("Received Loot Data");
-            }
-           
-            LootRespawnManager.collectedLootIds = receivedLootData;
-
-            // Do something with the message, e.g., deserialize it
-            ConfigManager.DeserializeConfig(configData);
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg("Recieved Config Data: " + configData);
-            }
-            
-            NetworkManager.SendLootSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
-        }
-    }
-
-    internal class LootSyncConfirmationEvent : Packets.NetEvent
-    {
-        public override string Id => "LootSync_ConfirmationEvent";
-        private Dictionary<ulong, float> connectionTimers = new Dictionary<ulong, float>();
-        private float timeoutDuration = 20f;
-
-        public void Send(string modVersion, ulong targetId)
-        {
-            var packet = NewPacket(modVersion.Length * 2, GlobalTargets.Everyone);
-            packet.Packet.WriteString(modVersion);
-            Send(packet);
-            RLog.Msg($"Sent confirmation with mod version: {modVersion}");
-        }
-
-        private void HandleReceivedConfirmation(string receivedModVersion, BoltConnection connection)
-        {
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg($"Received confirmation with mod version: {receivedModVersion}   from: " + MultiplayerUtilities.GetSteamId(connection));
-            }
-            
-            if (LootRespawnControl._modVersion != receivedModVersion)
-            {
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg($"Kicking player due to mismatching version: {receivedModVersion}  SteamID:" + MultiplayerUtilities.GetSteamId(connection));
-                }
-                KickPlayer(connection);
-            }
-            else
-            {
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg("Loot Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
-                }
-                
-                connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
-            }
-        }
-
-        public void StartTimer(BoltConnection connection)
-        {
-            connectionTimers[MultiplayerUtilities.GetSteamId(connection)] = Time.time;
-        }
-
-        public void UpdateTimers()
-        {
-            List<ulong> timedOutConnections = new List<ulong>();
-            foreach (var pair in connectionTimers)
-            {
-                if (Time.time - pair.Value > timeoutDuration)
-                {
-                    timedOutConnections.Add(pair.Key);
-                }
-            }
-            foreach (var connectionId in timedOutConnections)
-            {
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg($"Kicked connecting player due to timeout! " + connectionId);
-                }
-                KickPlayer(MultiplayerUtilities.GetConnectionFromSteamId(connectionId));
-                connectionTimers.Remove(connectionId);
-            }
-        }
-
-        public override void Read(UdpPacket packet, BoltConnection fromConnection)
-        {
-            var receivedModVersion = packet.ReadString();
-            if (!BoltNetwork.isServerOrNotRunning) { return; }
-            HandleReceivedConfirmation(receivedModVersion, fromConnection);
-        }
-
-        private void KickPlayer(BoltConnection connection)
-        {
-            connection.Disconnect(new CoopKickToken { Banned = true, KickMessage = "HOST_KICKED_YOU" }.Cast<IProtocolToken>());
-        }
-    }
-
-    internal class PickupEvent : Packets.NetEvent
-    {
-        public override string Id => "LootSync_PickupEvent";
-
-        public void Send(string pickupName, string pickupHash, long time, GlobalTargets target = GlobalTargets.Everyone)
-        {
-            // Calculate packet size
-            int packetSize = pickupName.Length * 2 + pickupHash.Length * 2 + 8; // string length * 2 (UTF-16) + long time
-
-            var packet = NewPacket(packetSize, target);
-
-            packet.Packet.WriteString(pickupName);
-            packet.Packet.WriteString(pickupHash);
-            packet.Packet.WriteLong(time);
-
-            Send(packet);
-        }
-
-        private void HandleNetworkedPickup(string pickupName, string pickupHash, long time)
-        {
-            // Implement your logic here for handling the received pickup data
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg($"Received Pickup: {pickupName}, Hash: {pickupHash}, Time: {time}");
-            }
-            
-            LootRespawnControl.HandlePickupDataRecieved(pickupName, pickupHash, time);
-        }
-
-        public override void Read(UdpPacket packet, BoltConnection fromConnection)
-        {
-            string pickupName = packet.ReadString();
-            string pickupHash = packet.ReadString();
-            long time = packet.ReadLong();
-
-            HandleNetworkedPickup(pickupName, pickupHash, time);
-        }
-    }
+    // Networking manager, register and base methods for sending
 
     internal class NetworkManager
     {
-        private static bool _initialized = false;
         public static LootDataEvent _lootDataEvent;
         public static LootSyncConfirmationEvent _lootSyncConfirmationEvent;
-        public static PickupEvent _pickupEvent;
+        public static PickupEventHandler _pickupEvent;
+        public static PickupEventRequest _pickupRequest;
+        public static PickupEventAck _pickupAck;
 
         public static void RegisterPackets()
         {
             _lootDataEvent = new LootDataEvent();
             _lootSyncConfirmationEvent = new LootSyncConfirmationEvent();
-            _pickupEvent = new PickupEvent();
+            _pickupEvent = new PickupEventHandler();
+            _pickupRequest = new PickupEventRequest();
+            _pickupAck = new PickupEventAck();
             Packets.Register(_lootDataEvent);
             Packets.Register(_lootSyncConfirmationEvent);
             Packets.Register(_pickupEvent);
+            Packets.Register(_pickupRequest);
+            Packets.Register(_pickupAck);
         }
 
         public static void SendLootData(BoltConnection connection)
@@ -252,9 +78,19 @@ namespace LootRespawnControl
             return lootData;
         }
 
-        public static void SendPickupEvent(string pickupName, string pickupHash, long time, GlobalTargets target = GlobalTargets.Everyone)
+        public static void SendPickupEvent(string pickupName, string pickupHash, int pickupId, long time, GlobalTargets target = GlobalTargets.Everyone)
         {
-            _pickupEvent.Send(pickupName, pickupHash, time, target);
+            _pickupEvent.Send(pickupName, pickupHash, pickupId, time, target);
+        }
+
+        public static void SendPickupRequest(string pickupName, string pickupHash, int pickupId, long time)
+        {
+            _pickupRequest.Send(pickupName, pickupHash, pickupId, time);
+        }
+
+        public static void SendPickupAck(string pickupHash, bool confirm, BoltConnection target)
+        {
+            _pickupAck.Send(pickupHash, confirm, target);
         }
 
         public static void Update()
