@@ -65,7 +65,7 @@ namespace LootRespawnControl.Harmony
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
                 if (PickupGui == null)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return true; }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui " + __instance.gameObject.transform.parent.name); return true; }
                 }
 
                 if (__instance.name.Contains("Clone")) { return true; }

@@ -72,6 +72,7 @@ namespace LootRespawnControl
             if (LootRespawnControl.ItemIdsThrowables.Contains(ItemId) && !allowThrowables) { result = true; }
             if (LootRespawnControl.ItemIdsMedicineAndEnergy.Contains(ItemId) && !allowMeds) { result = true; }
             if (LootRespawnControl.ItemIdsPlants.Contains(ItemId) && !allowPlants) { result = true; }
+            if (LootRespawnControl._breakableId == ItemId && !allowBreakables) { result = true; }
 
             //Force no removal if whitelisted
             if (LootRespawnControl.CustomWhitelist.Contains(ItemId)) { result = false; }

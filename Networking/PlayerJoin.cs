@@ -4,6 +4,7 @@ using RedLoader;
 using Sons.Multiplayer;
 using SonsSdk.Networking;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,7 +20,7 @@ namespace LootRespawnControl.Networking
     {
 
         //recieve/send the confirmation that the data was recieved
-        internal class LootSyncConfirmationEvent : Packets.NetEvent
+        internal class ConfigSyncConfirmationEvent : Packets.NetEvent
         {
             public override string Id => "LootSync_ConfirmationEvent";
             private Dictionary<ulong, float> connectionTimers = new Dictionary<ulong, float>();
@@ -52,10 +53,11 @@ namespace LootRespawnControl.Networking
                 {
                     if (Config.ConsoleLogging.Value)
                     {
-                        RLog.Msg("Loot Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
+                        RLog.Msg("Config Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
                     }
 
                     connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
+                    NetworkManager.SendLootData(NetworkManager.GetHostLootData(), connection);
                 }
             }
 
@@ -99,80 +101,163 @@ namespace LootRespawnControl.Networking
         }
 
         //Send the loot data as well as config data
-        internal class LootDataEvent : Packets.NetEvent
+        internal class ConfigDataEvent : Packets.NetEvent
         {
-            public override string Id => "LootSync_LootDataEvent";
+            public override string Id => "ConfigSync_LootDataEvent";
 
             public void Send(HashSet<LootData> lootData, string configData, BoltConnection connection)
             {
-                // Remove any unnecessary data
-                HashSet<LootData> networkedLootData = LootManager.LootRespawnManager.GetNetworkedCollected(lootData);
-
-                // Serialize the HashSet to JSON
-                string lootDataJson = JsonConvert.SerializeObject(networkedLootData);
-
-                // Combine JSON strings with a separator
-                string combinedJson = lootDataJson + "||" + configData;
-
-                combinedJson = combinedJson + "12345678";
                 // Calculate packetSize: length of combined JSON string
-                int packetSize = sizeof(int) + combinedJson.Length * 2;
-
-                RLog.Msg("Trying to send packet with size: " + packetSize);
-
-                RLog.Msg("Packet data: " + combinedJson);
+                int packetSize = sizeof(int) + configData.Length * 2;
 
                 var packet = NewPacket(packetSize, connection);
 
                 // Write the combined JSON string
-                packet.Packet.WriteString(combinedJson);
+                packet.Packet.WriteString(configData);
 
-                RLog.Msg("Sending data packet (combined JSON)...");
+                RLog.Msg("Sending config data");
                 Send(packet);
             }
 
             public override void Read(UdpPacket packet, BoltConnection fromConnection)
             {
-                RLog.Msg("Received data packet (combined JSON)...");
+                RLog.Msg("Received config data");
 
                 // Read the combined JSON string
-                string combinedJson = packet.ReadString();
+                string configData = packet.ReadString();
 
-                // Split the combined JSON string
-                string[] jsonStrings = combinedJson.Split(new string[] { "||" }, System.StringSplitOptions.None);
 
-                if (jsonStrings.Length != 2)
-                {
-                    RLog.Error("Invalid combined JSON format received.");
-                    return; // Handle error appropriately
-                }
-
-                string lootDataJson = jsonStrings[0];
-                string configData = jsonStrings[1];
-
-                // Deserialize the HashSet from JSON
-                HashSet<LootData> receivedLootData = JsonConvert.DeserializeObject<HashSet<LootData>>(lootDataJson);
-
-                HandleReceivedData(receivedLootData, configData, fromConnection);
+                HandleReceivedData(configData, fromConnection);
             }
 
 
-            private void HandleReceivedData(HashSet<LootData> receivedLootData, string configData, BoltConnection target)
+            private void HandleReceivedData(string configData, BoltConnection target)
             {
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg("Received Loot Data: " + receivedLootData.Count);
-                }
-                //Merge the client data with the loot data
-                LootRespawnManager.recievedLootIds = receivedLootData;
-
                 ConfigManager.DeserializeConfig(configData);
                 if (Config.ConsoleLogging.Value)    
                 {
                     RLog.Msg("Recieved Config Data: " + configData);
                 }
 
-                NetworkManager.SendLootSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
+                NetworkManager.SendConfigSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
+            }
+        }
+
+
+        internal class LootDataEvent : Packets.NetEvent
+        {
+            public override string Id => "LootSync_LootDataEvent";
+
+            private const int CHUNK_SIZE = 1024; // * 2 due to UTF 16 therefore 2048
+            private const string COMPLETE_MARKER = "COMPLETE";
+
+            private string receivedLootData = "";
+
+            public void SendChunkedLootData(HashSet<LootData> lootData, BoltConnection connection)
+            {
+                HashSet<LootData> networkedLootData = LootManager.LootRespawnManager.GetNetworkedCollected(lootData);
+                string lootDataJson = JsonConvert.SerializeObject(networkedLootData);
+                SendLootDataChunks(lootDataJson, connection).RunCoro();
+            }
+
+            private IEnumerator SendLootDataChunks(string lootDataJson, BoltConnection connection)
+            {
+                for (int i = 0; i < lootDataJson.Length; i += CHUNK_SIZE)
+                {
+                    string chunk = lootDataJson.Substring(i, Mathf.Min(CHUNK_SIZE, lootDataJson.Length - i));
+                    SendLootDataChunk(chunk, connection);
+                    while (!LootDataAckReceived(connection)) // Check every frame
+                    {
+                        yield return null;
+                    }
+                }
+                SendLootDataChunk(COMPLETE_MARKER, connection);
+                while (!LootDataAckReceived(connection)) // Check every frame for final ACK
+                {
+                    yield return null;
+                }
+            }
+
+            private void SendLootDataChunk(string chunk, BoltConnection connection)
+            {
+                int packetSize = sizeof(int) + chunk.Length * 2;
+                var packet = NewPacket(packetSize, connection);
+                if (Config.ConsoleLogging.Value){ RLog.Msg("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk); }
+                packet.Packet.WriteString(chunk);
+                Send(packet);
+                ClearAckFlag(connection); // Clear the ACK flag before sending
+            }
+
+            public override void Read(UdpPacket packet, BoltConnection fromConnection)
+            {
+                string chunk = packet.ReadString();
+
+                if (chunk == COMPLETE_MARKER)
+                {
+                    HandleReceivedData(receivedLootData, fromConnection);
+                    receivedLootData = "";
+                }
+                else
+                {
+                    receivedLootData += chunk;
+                    if (Config.ConsoleLogging.Value) { RLog.Msg("Received loot data chunk...");}
+                    NetworkManager.SendLootDataAck(); // Send ACK
+                }
+            }
+
+            private void HandleReceivedData(string lootDataJson, BoltConnection target)
+            {
+                HashSet<LootData> receivedLootData = JsonConvert.DeserializeObject<HashSet<LootData>>(lootDataJson);
+                if (Config.ConsoleLogging.Value){ RLog.Msg("Finished receiving Loot Data: " + receivedLootData.Count); }
+                LootRespawnManager.recievedLootIds = receivedLootData;
+            }
+
+            // ACK Handling
+            private static Dictionary<ulong, bool> ackReceived = new Dictionary<ulong, bool>();
+
+            private bool LootDataAckReceived(BoltConnection connection)
+            {
+                if (ackReceived.ContainsKey(MultiplayerUtilities.GetSteamId(connection)) && ackReceived[MultiplayerUtilities.GetSteamId(connection)])
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            private void ClearAckFlag(BoltConnection connection)
+            {
+                if (!ackReceived.ContainsKey(MultiplayerUtilities.GetSteamId(connection)))
+                {
+                    ackReceived[MultiplayerUtilities.GetSteamId(connection)] = false;
+                }
+                else
+                {
+                    ackReceived[MultiplayerUtilities.GetSteamId(connection)] = false;
+                }
+            }
+
+            public static void SetAckReceived(BoltConnection connection)
+            {
+                ackReceived[MultiplayerUtilities.GetSteamId(connection)] = true;
+            }
+        }
+
+        internal class LootDataAck : Packets.NetEvent
+        {
+            public override string Id => "LootSync_LootDataAck";
+
+            public void SendAck(GlobalTargets target = GlobalTargets.OnlyServer)
+            {
+                var packet = NewPacket(16, target);
+                packet.Packet.WriteString("ACK");
+                Send(packet);
+                RLog.Msg("Sent Loot Data ACK");
+            }
+
+            public override void Read(UdpPacket packet, BoltConnection fromConnection)
+            {
+                RLog.Msg("Received Loot Data ACK");
+                LootDataEvent.SetAckReceived(fromConnection);
             }
         }
     }

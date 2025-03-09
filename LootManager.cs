@@ -80,13 +80,10 @@ namespace LootRespawnControl
 
                 //DO not continue if not the host or singleplayer.
                 if (BoltNetwork.isClient) { return; }
-                if (isBreakable)
+                if (isBreakable && ConfigManager.IsBreakablesNetworked())
                 {
-                    if (isBreakable && ConfigManager.IsBreakablesNetworked())
-                    {
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Loot Pickup Event...: {objectName}"); }
-                        NetworkManager.SendPickupEvent(objectName, identifier, 0, timestamp);
-                    }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Breakable Pickup Event...: {objectName}"); }
+                    NetworkManager.SendPickupEvent(objectName, identifier, 0, timestamp);
                 }
             }
 

@@ -27,7 +27,8 @@ namespace LootRespawnControl.Harmony
                 {
                     if (__instance.transform.name.Contains("BreakableSticksInteraction"))
                     {
-                        RLog.Warning("Attempted to remove BreakableSticksInteraction! Returning out...");
+                        RLog.Warning("Attempted to remove BreakableSticksInteraction! Returning out and removing hash...");
+                        LootRespawnManager.RemoveLootFromCollected(identifier);
                         return;
                     }
 
@@ -72,7 +73,7 @@ namespace LootRespawnControl.Harmony
                     //return out if blacklisted item would be dropped
                     if (LootRespawnControl.ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
 
-                    LootRespawnManager.MarkLootAsCollected(identifier, null, LootRespawnControl._breakableId, true);
+                    LootRespawnManager.MarkLootAsCollected(identifier, __instance.gameObject.name, LootRespawnControl._breakableId, true);
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
                     return;
                 }
@@ -95,7 +96,7 @@ namespace LootRespawnControl.Harmony
                     if (!HasBlacklisted)
                     {
                         //if not blacklisted and only includes pickup components store the hash
-                        LootRespawnManager.MarkLootAsCollected(identifier, null, LootRespawnControl._breakableId, true);
+                        LootRespawnManager.MarkLootAsCollected(identifier, __instance.gameObject.name, LootRespawnControl._breakableId, true);
                         if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
                     }
                     return;

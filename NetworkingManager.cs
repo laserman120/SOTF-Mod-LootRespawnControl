@@ -32,7 +32,7 @@ namespace LootRespawnControl
         {
             if (!Config.enableMultiplayer.Value) { return; }
             if (Config.ConsoleLogging.Value){ RLog.Msg("Player connected, SteamID: " + MultiplayerUtilities.GetSteamId(connection)); }
-            NetworkManager.SendLootData(connection);
+            NetworkManager.SendConfigData(connection);
         }
     }
 
@@ -40,39 +40,55 @@ namespace LootRespawnControl
 
     internal class NetworkManager
     {
+        public static ConfigDataEvent _configDataEvent;
+        public static ConfigSyncConfirmationEvent _configSyncConfirmationEvent;
         public static LootDataEvent _lootDataEvent;
-        public static LootSyncConfirmationEvent _lootSyncConfirmationEvent;
+        public static LootDataAck _lootDataAck;
         public static PickupEventHandler _pickupEvent;
         public static PickupEventRequest _pickupRequest;
         public static PickupEventAck _pickupAck;
 
         public static void RegisterPackets()
         {
+            _configDataEvent = new ConfigDataEvent();
+            _configSyncConfirmationEvent = new ConfigSyncConfirmationEvent();
             _lootDataEvent = new LootDataEvent();
-            _lootSyncConfirmationEvent = new LootSyncConfirmationEvent();
+            _lootDataAck = new LootDataAck();
             _pickupEvent = new PickupEventHandler();
             _pickupRequest = new PickupEventRequest();
             _pickupAck = new PickupEventAck();
+            Packets.Register(_configDataEvent);
+            Packets.Register(_configSyncConfirmationEvent);
             Packets.Register(_lootDataEvent);
-            Packets.Register(_lootSyncConfirmationEvent);
+            Packets.Register(_lootDataAck);
             Packets.Register(_pickupEvent);
             Packets.Register(_pickupRequest);
             Packets.Register(_pickupAck);
         }
 
-        public static void SendLootData(BoltConnection connection)
+        public static void SendConfigData(BoltConnection connection)
         {
             HashSet<LootData> hostLootData = GetHostLootData();
-            _lootDataEvent.Send(hostLootData, Config.Serialize(), connection);
-            _lootSyncConfirmationEvent.StartTimer(connection);
+            _configDataEvent.Send(hostLootData, Config.Serialize(), connection);
+            _configSyncConfirmationEvent.StartTimer(connection);
         }
 
-        public static void SendLootSyncConfirmation(string modVersion, ulong targetId)
+        public static void SendConfigSyncConfirmation(string modVersion, ulong targetId)
         {
-            _lootSyncConfirmationEvent.Send(modVersion, targetId);
+            _configSyncConfirmationEvent.Send(modVersion, targetId);
         }
 
-        private static HashSet<LootData> GetHostLootData()
+        public static void SendLootData(HashSet<LootData> lootData, BoltConnection connection)
+        {
+            _lootDataEvent.SendChunkedLootData(lootData, connection);
+        }
+
+        public static void SendLootDataAck()
+        {
+            _lootDataAck.SendAck();
+        }
+
+        public static HashSet<LootData> GetHostLootData()
         {
             HashSet<LootData> lootData = LootRespawnManager.collectedLootIds;
             return lootData;
@@ -95,7 +111,7 @@ namespace LootRespawnControl
 
         public static void Update()
         {
-            _lootSyncConfirmationEvent.UpdateTimers();
+            _configSyncConfirmationEvent.UpdateTimers();
         }
     }
 }
