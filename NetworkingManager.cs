@@ -41,6 +41,7 @@ namespace LootRespawnControl
     internal class NetworkManager
     {
         public static ConfigDataEvent _configDataEvent;
+        public static ConfigDataAck _configDataAck;
         public static ConfigSyncConfirmationEvent _configSyncConfirmationEvent;
         public static LootDataEvent _lootDataEvent;
         public static LootDataAck _lootDataAck;
@@ -51,6 +52,7 @@ namespace LootRespawnControl
         public static void RegisterPackets()
         {
             _configDataEvent = new ConfigDataEvent();
+            _configDataAck = new ConfigDataAck();
             _configSyncConfirmationEvent = new ConfigSyncConfirmationEvent();
             _lootDataEvent = new LootDataEvent();
             _lootDataAck = new LootDataAck();
@@ -58,6 +60,7 @@ namespace LootRespawnControl
             _pickupRequest = new PickupEventRequest();
             _pickupAck = new PickupEventAck();
             Packets.Register(_configDataEvent);
+            Packets.Register(_configDataAck);
             Packets.Register(_configSyncConfirmationEvent);
             Packets.Register(_lootDataEvent);
             Packets.Register(_lootDataAck);
@@ -68,9 +71,13 @@ namespace LootRespawnControl
 
         public static void SendConfigData(BoltConnection connection)
         {
-            HashSet<LootData> hostLootData = GetHostLootData();
-            _configDataEvent.Send(hostLootData, Config.Serialize(), connection);
+            _configDataEvent.Send(Config.Serialize(), connection);
             _configSyncConfirmationEvent.StartTimer(connection);
+        }
+
+        public static void SendConfigDataAck()
+        {
+            _configDataAck.SendAck();
         }
 
         public static void SendConfigSyncConfirmation(string modVersion, ulong targetId)

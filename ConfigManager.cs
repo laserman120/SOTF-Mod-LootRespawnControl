@@ -1,4 +1,5 @@
 ﻿using RedLoader;
+using SonsSdk;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace LootRespawnControl
 {
     public static class ConfigManager
     {
+        public static bool enableMultiplayer { get; private set; }
         public static bool useTimerGlobal { get; private set; }
         public static int timeInDays { get; private set; }
         public static bool allowMelee { get; private set; }
@@ -65,6 +67,7 @@ namespace LootRespawnControl
             bool result = false;
             if (LootRespawnControl.ItemIdsMeleeWeapons.Contains(ItemId) && !allowMelee) { result = true; }
             if (LootRespawnControl.ItemIdsRangedWeapons.Contains(ItemId) && !allowRanged) { result = true; }
+            if (LootRespawnControl.ItemIdsWeaponMods.Contains(ItemId) && !allowWeaponMods) { result = true; }
             if (LootRespawnControl.ItemIdsMaterials.Contains(ItemId) && !allowMaterials) { result = true; }
             if (LootRespawnControl.ItemIdsAmmunition.Contains(ItemId) && !allowAmmunition) { result = true; }
             if (LootRespawnControl.ItemIdsExpendables.Contains(ItemId) && !allowExpendables) { result = true; }
@@ -85,6 +88,7 @@ namespace LootRespawnControl
             bool result = false;
             if (LootRespawnControl.ItemIdsMeleeWeapons.Contains(ItemId) && allowMeleeTimed) { result = true; }
             if (LootRespawnControl.ItemIdsRangedWeapons.Contains(ItemId) && allowRangedTimed) { result = true; }
+            if (LootRespawnControl.ItemIdsWeaponMods.Contains(ItemId) && allowWeaponModsTimed) { result = true; }
             if (LootRespawnControl.ItemIdsMaterials.Contains(ItemId) && allowMaterialsTimed) { result = true; }
             if (LootRespawnControl.ItemIdsAmmunition.Contains(ItemId) && allowAmmunitionTimed) { result = true; }
             if (LootRespawnControl.ItemIdsExpendables.Contains(ItemId) && allowExpendablesTimed) { result = true; }
@@ -104,6 +108,7 @@ namespace LootRespawnControl
             bool result = false;
             if (LootRespawnControl.ItemIdsMeleeWeapons.Contains(ItemId) && removeMelee) { result = true; }
             if (LootRespawnControl.ItemIdsRangedWeapons.Contains(ItemId) && removeRanged) { result = true; }
+            if (LootRespawnControl.ItemIdsWeaponMods.Contains(ItemId) && removeWeaponMods) { result = true; }
             if (LootRespawnControl.ItemIdsMaterials.Contains(ItemId) && removeMaterials) { result = true; }
             if (LootRespawnControl.ItemIdsAmmunition.Contains(ItemId) && removeAmmunition) { result = true; }
             if (LootRespawnControl.ItemIdsExpendables.Contains(ItemId) && removeExpendables) { result = true; }
@@ -123,6 +128,7 @@ namespace LootRespawnControl
             bool result = false;
             if (LootRespawnControl.ItemIdsMeleeWeapons.Contains(ItemId) && enableNetworkingMelee) { result = true; }
             if (LootRespawnControl.ItemIdsRangedWeapons.Contains(ItemId) && enableNetworkingRanged) { result = true; }
+            if (LootRespawnControl.ItemIdsWeaponMods.Contains(ItemId) && enableNetworkingWeaponMods) { result = true; }
             if (LootRespawnControl.ItemIdsMaterials.Contains(ItemId) && enableNetworkingMaterials) { result = true; }
             if (LootRespawnControl.ItemIdsAmmunition.Contains(ItemId) && enableNetworkingAmmunition) { result = true; }
             if (LootRespawnControl.ItemIdsExpendables.Contains(ItemId) && enableNetworkingExpendables) { result = true; }
@@ -256,6 +262,16 @@ namespace LootRespawnControl
                     }
                 }
             }
+        }
+
+        public static void sendConfigUnableToChangeNotification()
+        {
+            SonsTools.ShowMessageBox("Loot Respawn Control", "Configuration change will not take effect until you restart the game or reload the save!");
+        }
+
+        public static void sendConfigNotInUseNotification()
+        {
+            SonsTools.ShowMessageBox("Loot Respawn Control", "When you are not the Host your configuration will not have any effect on the game!");
         }
     }
 }

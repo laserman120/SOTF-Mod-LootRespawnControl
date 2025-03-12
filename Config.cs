@@ -425,10 +425,19 @@ public static class Config
 
     public static void OnSettingsUiClosed()
     {
-        LootRespawnControl.CustomWhitelist = LootRespawnControl.ExtractIds(Config.allowList.Value);
-        LootRespawnControl.CustomWhitelistTimed = LootRespawnControl.ExtractIds(Config.allowListTimed.Value);
-        LootRespawnControl.CustomBlacklist = LootRespawnControl.ExtractIds(Config.removeList.Value);
-        LootRespawnControl.CustomNetworkingList = LootRespawnControl.ExtractIds(Config.networkList.Value);
+        if(LootRespawnControl._currentScene == SonsSdk.ESonsScene.Game) {
+
+            if(BoltNetwork.isRunning && BoltNetwork.isClient && ConfigManager.enableMultiplayer)
+            {
+                ConfigManager.sendConfigNotInUseNotification();
+            } else
+            {
+                ConfigManager.sendConfigUnableToChangeNotification();
+            }
+            return;
+        }
+
+        ConfigManager.SetLocalConfigValues();
     }
 
     public static string Serialize()

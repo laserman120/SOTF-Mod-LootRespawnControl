@@ -24,7 +24,7 @@ namespace LootRespawnControl.Networking
         {
             public override string Id => "LootSync_ConfirmationEvent";
             private Dictionary<ulong, float> connectionTimers = new Dictionary<ulong, float>();
-            private float timeoutDuration = 30f;
+            private float timeoutDuration = 5f;
 
             public void Send(string modVersion, ulong targetId)
             {
@@ -105,43 +105,142 @@ namespace LootRespawnControl.Networking
         {
             public override string Id => "ConfigSync_LootDataEvent";
 
-            public void Send(HashSet<LootData> lootData, string configData, BoltConnection connection)
+            private const int CHUNK_SIZE = 1024; // * 2 due to UTF 16 therefore 2048
+            private const string COMPLETE_MARKER = "COMPLETE";
+
+            private string receivedConfigData = "";
+
+            public void Send(string configData, BoltConnection connection)
             {
-                // Calculate packetSize: length of combined JSON string
-                int packetSize = sizeof(int) + configData.Length * 2;
+                SendConfigDataChunks(configData, connection).RunCoro();
+            }
 
+            private IEnumerator SendConfigDataChunks(string lootDataJson, BoltConnection connection)
+            {
+                for (int i = 0; i < lootDataJson.Length; i += CHUNK_SIZE)
+                {
+                    string chunk = lootDataJson.Substring(i, Mathf.Min(CHUNK_SIZE, lootDataJson.Length - i));
+                    SendConfigDataChunk(chunk, connection);
+                    while (!LootDataAckReceived(connection)) // Check every frame
+                    {
+                        yield return null;
+                    }
+                }
+                SendConfigDataChunk(COMPLETE_MARKER, connection);
+                while (!LootDataAckReceived(connection)) // Check every frame for final ACK
+                {
+                    yield return null;
+                }
+            }
+
+            private void SendConfigDataChunk(string chunk, BoltConnection connection)
+            {
+                int packetSize = sizeof(int) + chunk.Length * 2;
                 var packet = NewPacket(packetSize, connection);
-
-                // Write the combined JSON string
-                packet.Packet.WriteString(configData);
-
-                RLog.Msg("Sending config data");
+                if (Config.ConsoleLogging.Value) { RLog.Msg("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk); }
+                packet.Packet.WriteString(chunk);
                 Send(packet);
+                ClearAckFlag(connection); // Clear the ACK flag before sending
             }
 
             public override void Read(UdpPacket packet, BoltConnection fromConnection)
             {
-                RLog.Msg("Received config data");
+                string chunk = packet.ReadString();
 
-                // Read the combined JSON string
-                string configData = packet.ReadString();
-
-
-                HandleReceivedData(configData, fromConnection);
+                if (chunk == COMPLETE_MARKER)
+                {
+                    HandleReceivedConfigData(receivedConfigData, fromConnection);
+                    receivedConfigData = "";
+                }
+                else
+                {
+                    receivedConfigData += chunk;
+                    if (Config.ConsoleLogging.Value) { RLog.Msg("Received config data chunk..."); }
+                    NetworkManager.SendConfigDataAck(); // Send ACK
+                }
             }
 
-
-            private void HandleReceivedData(string configData, BoltConnection target)
+            private void HandleReceivedConfigData(string configData, BoltConnection target)
             {
+                //HANDLE DATA
                 ConfigManager.DeserializeConfig(configData);
-                if (Config.ConsoleLogging.Value)    
-                {
-                    RLog.Msg("Recieved Config Data: " + configData);
-                }
-
+                if (Config.ConsoleLogging.Value) { RLog.Msg("Finished receiving Config Data  " + configData); }
                 NetworkManager.SendConfigSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
             }
+
+            // ACK Handling
+            private static Dictionary<ulong, bool> ackReceived = new Dictionary<ulong, bool>();
+
+            private bool LootDataAckReceived(BoltConnection connection)
+            {
+                if (ackReceived.ContainsKey(MultiplayerUtilities.GetSteamId(connection)) && ackReceived[MultiplayerUtilities.GetSteamId(connection)])
+                {
+                    return true;
+                }
+                return false;
+            }
+
+            private void ClearAckFlag(BoltConnection connection)
+            {
+                if (!ackReceived.ContainsKey(MultiplayerUtilities.GetSteamId(connection)))
+                {
+                    ackReceived[MultiplayerUtilities.GetSteamId(connection)] = false;
+                }
+                else
+                {
+                    ackReceived[MultiplayerUtilities.GetSteamId(connection)] = false;
+                }
+            }
+
+            public static void SetAckReceived(BoltConnection connection)
+            {
+                ackReceived[MultiplayerUtilities.GetSteamId(connection)] = true;
+            }
         }
+
+        internal class ConfigDataAck : Packets.NetEvent
+        {
+            public override string Id => "ConfigSync_LootDataAck";
+
+            public void SendAck(GlobalTargets target = GlobalTargets.OnlyServer)
+            {
+                var packet = NewPacket(16, target);
+                packet.Packet.WriteString("ACK");
+                Send(packet);
+                RLog.Msg("Sent Config Data ACK");
+            }
+
+            public override void Read(UdpPacket packet, BoltConnection fromConnection)
+            {
+                RLog.Msg("Received Config Data ACK");
+                ConfigDataEvent.SetAckReceived(fromConnection);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         internal class LootDataEvent : Packets.NetEvent

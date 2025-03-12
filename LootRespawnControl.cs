@@ -185,6 +185,8 @@ public class LootRespawnControl : SonsMod
 
     public static List<KeyValuePair<string, bool?>> pickupsAwaitingReply = new List<KeyValuePair<string, bool?>>();
 
+    public static ESonsScene _currentScene;
+
     public LootRespawnControl()
     {
         HarmonyPatchAll = true;
@@ -228,6 +230,11 @@ public class LootRespawnControl : SonsMod
             }
             return;
         }
+    }
+
+    protected override void OnSonsSceneInitialized(ESonsScene sonsScene)
+    {
+        _currentScene = sonsScene;
     }
 
     private void OnUpdate()

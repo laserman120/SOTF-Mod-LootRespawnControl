@@ -65,49 +65,47 @@ namespace LootRespawnControl.Harmony
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
                 if (PickupGui == null)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui " + __instance.gameObject.transform.parent.name); return true; }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui "); return true; }
                 }
 
                 if (__instance.name.Contains("Clone")) { return true; }
 
                 string identifier = identifierComponent.Identifier;
 
-                if (ConfigManager.ShouldIdBeRemoved(__instance._itemId))
+                if (ConfigManager.ShouldIdBeRemoved(__instance._itemId) || ConfigManager.ShouldIdBeNetworked(__instance._itemId))
                 {
                     //Networking check
-                    if (ConfigManager.ShouldIdBeNetworked(__instance._itemId))
+                    if (BoltNetwork.isClient)
                     {
-                        if (BoltNetwork.isClient)
+                        if (!HashExists(identifier))
                         {
-                            if (!HashExists(identifier))
-                            {
-                                // Send the request to the server,
-                                // Coroutine checks for a reply
-                                // Coroutine handles the reply and runs the collect method again
+                            // Send the request to the server,
+                            // Coroutine checks for a reply
+                            // Coroutine handles the reply and runs the collect method again
 
-                                if (Config.ConsoleLogging.Value) { RLog.Msg($"Set hash to awaiting reply, sending request: {__instance.name}"); }
-                                __instance.gameObject.SetActive(false);
-                                AddHash(identifier);
-                                NetworkManager.SendPickupRequest(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
-                                AwaitPickupConfirmation(__instance, identifier).RunCoro();
+                            if (Config.ConsoleLogging.Value) { RLog.Msg($"Set hash to awaiting reply, sending request: {__instance.name}"); }
+                            __instance.gameObject.SetActive(false);
+                            AddHash(identifier);
+                            NetworkManager.SendPickupRequest(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
+                            AwaitPickupConfirmation(__instance, identifier).RunCoro();
+                            return false;
+                        } else
+                        {
+                            if (GetHashBool(identifier) == false)
+                            {
                                 return false;
                             } else
                             {
-                                if (GetHashBool(identifier) == false)
-                                {
-                                    return false;
-                                } else
-                                {
-                                    RemoveHash(identifier);
-                                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Hash is true, removing it from the list and continuing execution: {__instance.name}"); }
-                                }
+                                RemoveHash(identifier);
+                                if (Config.ConsoleLogging.Value) { RLog.Msg($"Hash is true, removing it from the list and continuing execution: {__instance.name}"); }
                             }
-                        } else
-                        {
-                            //If host send out the pickup event directly
-                            NetworkManager.SendPickupEvent(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
                         }
+                    } else if(BoltNetwork.isRunning)
+                    {
+                        //If host send out the pickup event directly
+                        NetworkManager.SendPickupEvent(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
                     }
+                    
 
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
@@ -151,7 +149,8 @@ namespace LootRespawnControl.Harmony
             {
                 if(GetHashBool(identifier) == false)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Warning($"DESYNC DETECTED! Pickup already collected on the server side, but not on the client. Destroying pickup... {identifier}"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Warning($"DESYNC DETECTED! Pickup already collected on the server side, but not on the client. Destroying Pickup and marking as collected! {identifier}"); }
+                    LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
                     GameObject.Destroy(__instance.gameObject);
                     yield break;
                 }
