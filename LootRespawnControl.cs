@@ -23,6 +23,7 @@ using SonsSdk.Networking;
 using static SonsSdk.ItemTools;
 using System.Security.AccessControl;
 using static LootRespawnControl.LootManager.LootRespawnManager;
+using System.Linq;
 
 namespace LootRespawnControl;
 
@@ -185,6 +186,8 @@ public class LootRespawnControl : SonsMod
 
     public static List<KeyValuePair<string, bool?>> pickupsAwaitingReply = new List<KeyValuePair<string, bool?>>();
 
+    public static bool DoubleCheckedCollectedLoot = false;
+
     public static ESonsScene _currentScene;
 
     public LootRespawnControl()
@@ -245,6 +248,8 @@ public class LootRespawnControl : SonsMod
     private void OnWorldExitedCallback()
     {
         ConfigManager.SetLocalConfigValues();
+        LootRespawnManager.collectedLootIds = new HashSet<LootData>();
+        DoubleCheckedCollectedLoot = false;
         if (Config.ConsoleLogging.Value)
         {
             RLog.Msg("Exited World, Reset Values");
@@ -329,12 +334,18 @@ public class LootIdentifier : MonoBehaviour
     public string Identifier { get; private set; }
     public void GenerateIdentifier()
     {
-        Identifier = LootRespawnManager.GenerateLootID(transform.position, transform.rotation);
+        Identifier = LootRespawnManager.GenerateLootID(transform.position, transform.rotation, transform.name);
     }
     private void Awake()
     {
         GenerateIdentifier();
     }
+
+    /*void OnEnable()
+    {
+        GenerateIdentifier();
+    }   */
+
     public string ReturnIdentifier()
     {
         return Identifier;
@@ -365,6 +376,7 @@ public class LootRespawnSaveManager : ICustomSaveable<LootRespawnSaveManager.Loo
     public void Load(LootSaveData obj)
     {
         LootRespawnManager.LoadCollectedLoot(obj.collectedLootJson);
+
     }
 
     public class LootSaveData

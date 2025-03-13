@@ -85,7 +85,7 @@ namespace LootRespawnControl.Networking
 
                 Send(packet);
             }
-
+           
             private void HandlePickupRequest(string pickupName, string pickupHash, int pickupId, long time, BoltConnection fromConnection)
             {
                 // Implement your logic here for handling the received pickup data

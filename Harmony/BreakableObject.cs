@@ -61,6 +61,7 @@ namespace LootRespawnControl.Harmony
             {
                 LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
                 if (identifierComponent == null) { return; }
+
                 if (__instance.name.Contains("Clone")) { return; }
 
                 string identifier = identifierComponent.Identifier;

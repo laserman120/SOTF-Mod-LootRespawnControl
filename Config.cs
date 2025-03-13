@@ -123,7 +123,7 @@ public static class Config
 
         enableNetworkingMelee = Category.CreateEntry( // New
             "NetworkMelee",
-            false,
+            true,
             "Sync Melee Weapons",
             "Will synchronize pickup of melee weapons in multiplayer (Modern Axe, Fire Axe, Stun Baton...");
 
@@ -149,7 +149,7 @@ public static class Config
 
         enableNetworkingRanged = Category.CreateEntry( // New
             "NetworkRanged",
-            false,
+            true,
             "Sync Ranged Weapons",
             "Will synchronize pickup of ranged weapons in multiplayer (Pistol, Shotgun, Crossbow...)");
 
@@ -175,7 +175,7 @@ public static class Config
 
         enableNetworkingWeaponMods = Category.CreateEntry( // New
             "NetworkWeaponMods",
-            false,
+            true,
             "Sync Weapon Mods",
             "Will synchronize pickup of weapon mods in multiplayer (Pistol Rail, Gun Flashlight...)");
 
@@ -201,7 +201,7 @@ public static class Config
 
         enableNetworkingAmmunition = Category.CreateEntry( // New
             "NetworkAmmunition",
-            false,
+            true,
             "Sync Ammunition",
             "Will synchronize pickup of ammunition in multiplayer (Pistol ammo, Arrows, Bolts...)");
 
@@ -227,7 +227,7 @@ public static class Config
 
         enableNetworkingThrowables = Category.CreateEntry( // New
             "NetworkThrowables",
-            false,
+            true,
             "Sync Throwables",
             "Will synchronize pickup of throwables in multiplayer (Grenades, Sticky Bombs, Golf Balls...)");
 
@@ -255,7 +255,7 @@ public static class Config
 
         enableNetworkingMaterials = Category.CreateEntry( // New
             "NetworkMaterials",
-            false,
+            true,
             "Sync Materials",
             "Will synchronize pickup of crafting materials in multiplayer (Duct Tape, Rope, Coins...)");
 
@@ -281,7 +281,7 @@ public static class Config
 
         enableNetworkingFood = Category.CreateEntry( // New
             "NetworkFood",
-            false,
+            true,
             "Sync Food",
             "Will synchronize pickup of food in multiplayer (Cat Food, Cereal, MRE packs...)");
 
@@ -307,7 +307,7 @@ public static class Config
 
         enableNetworkingMeds = Category.CreateEntry( // New
             "NetworkMeds",
-            false,
+            true,
             "Sync Meds & Energy",
             "Will synchronize pickup of medicine and energy drinks in multiplayer");
 
@@ -333,7 +333,7 @@ public static class Config
 
         enableNetworkingPlants = Category.CreateEntry( // New
             "NetworkPlants",
-            false,
+            true,
             "Sync Plants",
             "Will synchronize pickup of plants in multiplayer (Aloe Vera, Mushrooms, Chicory...)");
 
@@ -361,7 +361,7 @@ public static class Config
 
         enableNetworkingExpendables = Category.CreateEntry( // New
             "NetworkExpendables",
-            false,
+            true,
             "Sync Expendables",
             "Will synchronize pickup of expendables in multiplayer (Air Canisters, Printer Ink, Hide Bags)");
 
@@ -380,7 +380,7 @@ public static class Config
 
         enableNetworkingBreakables = Category.CreateEntry( // New
             "NetworkBreakables",
-            false,
+            true,
             "Sync Breakables",
             "Will synchronize destruction of breakables in multiplayer (Laptops, Gore Vases...)");
 

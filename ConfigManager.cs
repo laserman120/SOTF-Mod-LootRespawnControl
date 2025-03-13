@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
+using static RedLoader.RLog;
 
 namespace LootRespawnControl
 {
@@ -126,6 +128,13 @@ namespace LootRespawnControl
         public static bool ShouldIdBeNetworked(int ItemId)
         {
             bool result = false;
+
+            //If multiplayer disabled then always return false
+            if (!enableMultiplayer)
+            {
+                return false;
+            }
+
             if (LootRespawnControl.ItemIdsMeleeWeapons.Contains(ItemId) && enableNetworkingMelee) { result = true; }
             if (LootRespawnControl.ItemIdsRangedWeapons.Contains(ItemId) && enableNetworkingRanged) { result = true; }
             if (LootRespawnControl.ItemIdsWeaponMods.Contains(ItemId) && enableNetworkingWeaponMods) { result = true; }
@@ -137,11 +146,10 @@ namespace LootRespawnControl
             if (LootRespawnControl.ItemIdsMedicineAndEnergy.Contains(ItemId) && enableNetworkingMeds) { result = true; }
             if (LootRespawnControl.ItemIdsPlants.Contains(ItemId) && enableNetworkingPlants) { result = true; }
 
-            //Force no removal if whitelisted
+            //Check for custom list
             if (LootRespawnControl.CustomNetworkingList.Contains(ItemId)) { result = true; }
 
-            //If multiplayer disabled and the host then always return false
-            if(!Config.enableMultiplayer.Value && BoltNetwork.isServerOrNotRunning) { result = false;  }
+            
 
             return result;
         }
@@ -266,12 +274,24 @@ namespace LootRespawnControl
 
         public static void sendConfigUnableToChangeNotification()
         {
-            SonsTools.ShowMessageBox("Loot Respawn Control", "Configuration change will not take effect until you restart the game or reload the save!");
+            DelayedMessageExecution("Configuration changes require a game restart or save reload to apply.").RunCoro();
         }
 
         public static void sendConfigNotInUseNotification()
         {
-            SonsTools.ShowMessageBox("Loot Respawn Control", "When you are not the Host your configuration will not have any effect on the game!");
+            DelayedMessageExecution("Server configuration overrides client configuration. Changes made will not take effect!").RunCoro();
+        }
+
+        private static System.Collections.IEnumerator DelayedMessageExecution(string message)
+        {
+            yield return new WaitForSeconds(0.1f);
+            SonsTools.ShowMessage("LootRespawnControl: " + message, 7);
+        }
+
+        private static void ShowDialog(string message)
+        {
+            GenericModalDialog instance = GenericModalDialog.ShowDialog("Loot Respawn Control", message);
+            instance.SetOption1("OK", () => { });
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Sons.Gameplay;
 using static LootRespawnControl.LootManager;
+using static RedLoader.RLog;
 
 namespace LootRespawnControl.Harmony
 {
@@ -17,38 +18,64 @@ namespace LootRespawnControl.Harmony
 
     internal class PickUp
     {
+
+        public static List<Sons.Gameplay.PickUp> PickupsPendingCheck = new List<Sons.Gameplay.PickUp>();
+
         //Patch the spawning of pickups
         [HarmonyPatch(typeof(Sons.Gameplay.PickUp), "Awake")]
         private static class PickUpAwakePatch
         {
             private static void Postfix(Sons.Gameplay.PickUp __instance)
             {
-                LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
-                string identifier = identifierComponent.Identifier;
+                CheckIfPickupShouldBeDeleted(__instance);
 
-                if (ConfigManager.IsItemIdBlocked(__instance._itemId))
+                if (!LootRespawnControl.DoubleCheckedCollectedLoot)
                 {
-                    Transform PickupGui = __instance.transform.Find("_PickupGui_");
-                    if (PickupGui == null)
+                    if(!PickupsPendingCheck.Contains(__instance))
                     {
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui"); return; }
+                        PickupsPendingCheck.Add(__instance);
                     }
-
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
-                    UnityEngine.Object.Destroy(__instance._destroyTarget);
                 }
 
-                if (LootRespawnManager.IsLootCollected(identifier) && ConfigManager.ShouldIdBeRemoved(__instance._itemId))
+            }
+        }
+
+        [HarmonyPatch(typeof(Sons.Gameplay.PickUp), "OnEnable")]
+        private static class PickUpEnablePatch
+        {
+            private static void Postfix(Sons.Gameplay.PickUp __instance)
+            {
+                CheckIfPickupShouldBeDeleted(__instance);
+            }
+        }
+
+        public static void CheckIfPickupShouldBeDeleted(Sons.Gameplay.PickUp __instance)
+        {
+            LootIdentifier identifierComponent = __instance.transform.gameObject.GetOrAddComponent<LootIdentifier>();
+            string identifier = identifierComponent.Identifier;
+
+            if (ConfigManager.IsItemIdBlocked(__instance._itemId))
+            {
+                Transform PickupGui = __instance.transform.Find("_PickupGui_");
+                if (PickupGui == null)
                 {
-                    if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId) && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                    {
-                        LootRespawnManager.RemoveLootFromCollected(identifier);
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
-                        return;
-                    }
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
-                    UnityEngine.Object.Destroy(__instance._destroyTarget);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented destruction of: {__instance.name} due to missing PickupGui"); return; }
                 }
+
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
+                UnityEngine.Object.Destroy(__instance._destroyTarget);
+            }
+
+            if (LootRespawnManager.IsLootCollected(identifier) && ConfigManager.ShouldIdBeRemoved(__instance._itemId))
+            {
+                if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId) && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                {
+                    LootRespawnManager.RemoveLootFromCollected(identifier);
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
+                    return;
+                }
+                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
+                UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }
 
@@ -63,7 +90,7 @@ namespace LootRespawnControl.Harmony
 
                 //hotfix for interaction components which also feature a pickup component of any type
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
-                if (PickupGui == null)
+                if (PickupGui == null && !IsValidRadio(__instance))
                 {
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui "); return true; }
                 }
@@ -75,7 +102,7 @@ namespace LootRespawnControl.Harmony
                 if (ConfigManager.ShouldIdBeRemoved(__instance._itemId) || ConfigManager.ShouldIdBeNetworked(__instance._itemId))
                 {
                     //Networking check
-                    if (BoltNetwork.isClient)
+                    if (BoltNetwork.isClient && ConfigManager.ShouldIdBeNetworked(__instance._itemId))
                     {
                         if (!HashExists(identifier))
                         {
@@ -100,7 +127,7 @@ namespace LootRespawnControl.Harmony
                                 if (Config.ConsoleLogging.Value) { RLog.Msg($"Hash is true, removing it from the list and continuing execution: {__instance.name}"); }
                             }
                         }
-                    } else if(BoltNetwork.isRunning)
+                    } else if(BoltNetwork.isRunning && ConfigManager.ShouldIdBeNetworked(__instance._itemId))
                     {
                         //If host send out the pickup event directly
                         NetworkManager.SendPickupEvent(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
@@ -221,5 +248,12 @@ namespace LootRespawnControl.Harmony
             return false;
         }
 
+        public static bool IsValidRadio(Sons.Gameplay.PickUp __instance)
+        {
+            if(__instance.name.StartsWith("Radio") && !__instance.name.Contains("FromStructure")){
+                return true;
+            }
+            return false;
+        }
     }
 }

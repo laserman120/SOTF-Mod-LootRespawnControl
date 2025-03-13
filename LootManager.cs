@@ -21,9 +21,9 @@ namespace LootRespawnControl
 
             public static HashSet<LootData> recievedLootIds = new HashSet<LootData>();
 
-            public static string GenerateLootID(Vector3 position, Quaternion rotation)
+            public static string GenerateLootID(Vector3 position, Quaternion rotation, string name)
             {
-                string combinedString = $"{position.x:F6}-{position.y:F6}-{position.z:F6}-{rotation.x:F6}-{rotation.y:F6}-{rotation.z:F6}-{rotation.w:F6}";
+                string combinedString = $"{position.x:F6}-{position.y:F6}-{position.z:F6}-{rotation.x:F6}-{rotation.y:F6}-{rotation.z:F6}-{rotation.w:F6}-{name.Substring(0, 3)}";
                 using (MD5 md5Hash = MD5.Create())
                 {
                     byte[] bytes = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(combinedString));
@@ -34,9 +34,10 @@ namespace LootRespawnControl
                         builder.Append(bytes[i].ToString("x2"));
                     }
 
-
                     return builder.ToString();
                 }
+
+                
             }
 
             public static string SaveCollectedLoot()
@@ -65,6 +66,20 @@ namespace LootRespawnControl
                     //Reset recieved data
                     recievedLootIds = new HashSet<LootData>();
                 }
+
+                //Double check any loaded objects that were created before loading has occured
+                Harmony.PickUp.PickupsPendingCheck.ForEach(PickUp =>
+                {
+                    if (PickUp != null)
+                    {
+                        Harmony.PickUp.CheckIfPickupShouldBeDeleted(PickUp);
+                    }
+                    Harmony.PickUp.PickupsPendingCheck.Remove(PickUp);
+                });
+
+                //Set this value to confirm that the double check has occured
+                LootRespawnControl.DoubleCheckedCollectedLoot = true;
+
             }
 
 
@@ -80,7 +95,7 @@ namespace LootRespawnControl
 
                 //DO not continue if not the host or singleplayer.
                 if (BoltNetwork.isClient) { return; }
-                if (isBreakable && ConfigManager.IsBreakablesNetworked())
+                if (isBreakable && ConfigManager.enableMultiplayer && ConfigManager.IsBreakablesNetworked())
                 {
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Breakable Pickup Event...: {objectName}"); }
                     NetworkManager.SendPickupEvent(objectName, identifier, 0, timestamp);
