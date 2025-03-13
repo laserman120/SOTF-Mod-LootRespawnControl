@@ -74,11 +74,11 @@ namespace LootRespawnControl
                     {
                         Harmony.PickUp.CheckIfPickupShouldBeDeleted(PickUp);
                     }
-                    Harmony.PickUp.PickupsPendingCheck.Remove(PickUp);
                 });
 
                 //Set this value to confirm that the double check has occured
                 LootRespawnControl.DoubleCheckedCollectedLoot = true;
+                Harmony.PickUp.PickupsPendingCheck = new List<Sons.Gameplay.PickUp>();
 
             }
 
