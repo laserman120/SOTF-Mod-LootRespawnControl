@@ -53,12 +53,31 @@ namespace LootRespawnControl
                     LootRespawnManager.collectedLootIds = new HashSet<LootData>();
                     return;
                 }
+
+                //Deserialize the data
                 var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
 
+                //Cleanup the data
                 LootRespawnManager.collectedLootIds = CleanupCollected(serializableSet.ToHashSet());
 
+                HandleStartupLootData();
+            }
+
+            public static void HandleStartupLootData()
+            {
+                //Load the local config data
+                ConfigManager.SetLocalConfigValues();
+
+                //Check if the user is in singleplayer or if the user is in multiplayer but the client
+                if (BoltNetwork.isRunning && BoltNetwork.isClient)
+                {
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is not the host / in singleplayer forcing networking off"); }
+                    ConfigManager.SetMultiplayerConfigValue(false);
+                    return;
+                }
+
                 //if we have recieved data merge it now
-                if(recievedLootIds.Count > 0)
+                if (recievedLootIds.Count > 0)
                 {
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Syncing local collected data with networked collected data"); }
                     LootRespawnManager.collectedLootIds = CleanupCollected(MergeCollectedLoot(LootRespawnManager.collectedLootIds, recievedLootIds));
@@ -79,7 +98,6 @@ namespace LootRespawnControl
                 //Set this value to confirm that the double check has occured
                 LootRespawnControl.DoubleCheckedCollectedLoot = true;
                 Harmony.PickUp.PickupsPendingCheck = new List<Sons.Gameplay.PickUp>();
-
             }
 
 

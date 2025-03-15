@@ -436,8 +436,6 @@ public static class Config
             }
             return;
         }
-
-        ConfigManager.SetLocalConfigValues();
     }
 
     public static string Serialize()

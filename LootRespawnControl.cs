@@ -215,9 +215,6 @@ public class LootRespawnControl : SonsMod
         SettingsRegistry.CreateSettings(this, null, typeof(Config));
         var saveManager = new LootRespawnSaveManager();
         SonsSaveTools.Register(saveManager);
-
-        //set the default values to the ConfigManager
-        ConfigManager.SetLocalConfigValues();
     }
 
     protected override void OnGameStart()
@@ -233,6 +230,11 @@ public class LootRespawnControl : SonsMod
             }
             return;
         }
+
+        if (!DoubleCheckedCollectedLoot)
+        {
+            HandleStartupLootData();
+        }
     }
 
     protected override void OnSonsSceneInitialized(ESonsScene sonsScene)
@@ -247,7 +249,6 @@ public class LootRespawnControl : SonsMod
 
     private void OnWorldExitedCallback()
     {
-        ConfigManager.SetLocalConfigValues();
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         DoubleCheckedCollectedLoot = false;
         if (Config.ConsoleLogging.Value)

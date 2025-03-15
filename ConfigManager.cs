@@ -206,6 +206,11 @@ namespace LootRespawnControl
             LootRespawnControl.CustomNetworkingList = LootRespawnControl.ExtractIds(networkList);
         }
 
+        public static void SetMultiplayerConfigValue(bool value)
+        {
+            enableMultiplayer = value;
+        }
+
         public static Dictionary<string, string> GetConfigManagerFields()
         {
             Dictionary<string, string> configValues = new Dictionary<string, string>();
