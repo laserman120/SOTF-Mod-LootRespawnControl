@@ -29,10 +29,6 @@ Each loot group has the following configuration options:
 * **"Sync [Group]" (Default: True)**
     * Synchronizes the specified loot group between players when "Should pickups be synced across players?" is enabled.
 
-You're right, providing the item IDs with your comments directly in the README will make it much more user-friendly and reliable. Here's the updated section with the item IDs and their corresponding descriptions:
-
-Markdown
-
 ## Default Loot Group Item IDs
 
 Here are the item IDs for the default loot groups, with descriptions. Use these as a reference for your custom lists.
