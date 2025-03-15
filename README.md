@@ -184,10 +184,10 @@ Customize your experience further by adding specific item IDs to these lists:
 
 ```ini
 [Custom Options]
-Whitelist = "123; 17; 18; 59; 62"
-WhitelistTimed = "123"
-Blacklist = "123; 12; 15; 698; 758; 125"
-networkList = "123"
+Whitelist = "356; 367; 437; 415; 503"  // Modern Axe, Katana, Pills, Cloth, Torch
+WhitelistTimed = "433; 436"  // Meat, Fish
+Blacklist = "394; 361; 420; 524"  // Chainsaw, Rifle, C4 Brick, Golf Ball
+networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 ```
 
 ## Networking
