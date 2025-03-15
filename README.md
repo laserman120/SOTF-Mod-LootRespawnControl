@@ -31,7 +31,7 @@ Each loot group has the following configuration options:
 
 ## Default Loot Group Item IDs
 
-Here are the item IDs for the default loot groups, with descriptions. Use these as a reference for your custom lists.
+Here are the item IDs for the default loot groups. You can use these as a reference for your custom lists.
 
 * **Melee Weapons:**
     ```
