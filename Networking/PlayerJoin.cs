@@ -48,6 +48,7 @@ namespace LootRespawnControl.Networking
                         RLog.Msg($"Kicking player due to mismatching version: {receivedModVersion}  SteamID:" + MultiplayerUtilities.GetSteamId(connection));
                     }
                     KickPlayer(connection);
+                    connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
                 }
                 else
                 {
@@ -165,6 +166,7 @@ namespace LootRespawnControl.Networking
                 //HANDLE DATA
                 ConfigManager.DeserializeConfig(configData);
                 if (Config.ConsoleLogging.Value) { RLog.Msg("Finished receiving Config Data  " + configData); }
+                LootRespawnControl.recievedConfigData = true;
                 NetworkManager.SendConfigSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
             }
 

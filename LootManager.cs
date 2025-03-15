@@ -54,33 +54,41 @@ namespace LootRespawnControl
                     return;
                 }
 
-                //Deserialize the data
-                var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
-
-                //Cleanup the data
-                LootRespawnManager.collectedLootIds = CleanupCollected(serializableSet.ToHashSet());
-
-                HandleStartupLootData();
+                HandleStartupLootData(jsonData);
             }
 
-            public static void HandleStartupLootData()
+            public static void HandleStartupLootData(string jsonData)
             {
-                //Load the local config data
-                ConfigManager.SetLocalConfigValues();
-
-                //Check if the user is in singleplayer or if the user is in multiplayer but the client
-                if (BoltNetwork.isRunning && BoltNetwork.isClient)
+                //Check if the user is in singleplayer or if the user is in multiplayer but the host has not sent any config data
+                if (BoltNetwork.isRunning && BoltNetwork.isClient && !LootRespawnControl.recievedConfigData)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is not the host / in singleplayer forcing networking off"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is not the host / in singleplayer and has not recieved any config data... setting local config values and forcing networking off"); }
+                    ConfigManager.SetLocalConfigValues();
                     ConfigManager.SetMultiplayerConfigValue(false);
                     return;
+                }
+                else if (BoltNetwork.isServerOrNotRunning)
+                {
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is the host / in singleplayer... setting local config values"); }
+                    ConfigManager.SetLocalConfigValues();
+                }
+
+                //now after the configuration is set we handle the saved data
+                if (jsonData != null)
+                {
+                    //Deserialize the data
+                    var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
+
+                    //Cleanup the data
+                    LootRespawnManager.collectedLootIds = CleanupCollected(serializableSet.ToHashSet());
                 }
 
                 //if we have recieved data merge it now
                 if (recievedLootIds.Count > 0)
                 {
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Syncing local collected data with networked collected data"); }
-                    LootRespawnManager.collectedLootIds = CleanupCollected(MergeCollectedLoot(LootRespawnManager.collectedLootIds, recievedLootIds));
+                    //We do not clean here, the host already cleaned the data for us, trust the host
+                    LootRespawnManager.collectedLootIds = MergeCollectedLoot(LootRespawnManager.collectedLootIds, recievedLootIds);
 
                     //Reset recieved data
                     recievedLootIds = new HashSet<LootData>();

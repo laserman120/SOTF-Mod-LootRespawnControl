@@ -187,6 +187,7 @@ public class LootRespawnControl : SonsMod
     public static List<KeyValuePair<string, bool?>> pickupsAwaitingReply = new List<KeyValuePair<string, bool?>>();
 
     public static bool DoubleCheckedCollectedLoot = false;
+    public static bool recievedConfigData = false;
 
     public static ESonsScene _currentScene;
 
@@ -233,7 +234,7 @@ public class LootRespawnControl : SonsMod
 
         if (!DoubleCheckedCollectedLoot)
         {
-            HandleStartupLootData();
+            HandleStartupLootData(null);
         }
     }
 
@@ -251,6 +252,7 @@ public class LootRespawnControl : SonsMod
     {
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         DoubleCheckedCollectedLoot = false;
+        recievedConfigData = false;
         if (Config.ConsoleLogging.Value)
         {
             RLog.Msg("Exited World, Reset Values");
