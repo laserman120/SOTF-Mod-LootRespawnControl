@@ -192,9 +192,21 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 * **Host Configuration:** When a client connects to a server with networking enabled, the client will use the host's configuration to ensure consistency. The client's local configuration will be ignored.
 * **Mod Compatibility:** All players must have the mod installed and use the same version to join a networked game. Players without the mod or with outdated versions will not be able to connect.
 
+## Good to Know / Important Interactions
+
+* **Enforcing Configuration in Multiplayer:**
+    * You can enforce your configuration on other players in multiplayer by enabling "Should pickups be synced across players?" while disabling all individual "Sync [Group]" options. This will force clients to use the host's configuration without synchronizing individual loot pickups.
+* **Respawning with Timers in Multiplayer:**
+    * When both global or group-specific "Allow [Group] to respawn with the Timer" options and "Should pickups be synced across players?" are enabled, loot will only respawn after the host restarts the game. Clients restarting their game will not trigger loot respawns based on timers.
+* **Whitelist and Blacklist Priority:**
+    * If an item is present in both a whitelist and a blacklist, the blacklist will take priority, and the item will not spawn.
+* **Client config is ignored:**
+    * When connecting to a host with networking enabled the clients config file will be ignored, and the clients game will use the hosts config.
+
+
 ## Console Logging (Debugging)
 
 * **Purpose:** This option is for debugging and troubleshooting. It logs various events, including pickups, deletions, networking, conditions, and error handling.
-* **Performance:** Enabling logging can cause performance issues, especially when using tools like Unity Explorer with the console enabled. It is recommended to keep logging disabled during normal gameplay.
+* **Performance:** Enabling logging can cause performance issues when using tools like Unity Explorer with the console enabled. It is recommended to keep logging disabled during normal gameplay.
 * **Bug Reporting:** If you encounter a bug or unexpected issue, enable logging, reproduce the issue, and include the log file with your bug report. For networking issues like desyncs, both the host and client should provide log files.
 * **Log File Location:** `Sons Of The Forest\_Redloader\Latest.log`
