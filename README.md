@@ -213,6 +213,6 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 
 ## Special Thanks
 
-* **TheSuperSnooper:** For helping me test and debug the mod
+* **TheSuperSnooper:** For helping me test and debug the mod as well as tons of feedback
 * **Spidy:** For testing and providing feedback
 * **ToniMacaroni:** For redloader and all his help during its creation
