@@ -210,3 +210,9 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 * **Performance:** Enabling logging can cause performance issues when using tools like Unity Explorer with the console enabled. It is recommended to keep logging disabled during normal gameplay.
 * **Bug Reporting:** If you encounter a bug or unexpected issue, enable logging, reproduce the issue, and include the log file with your bug report. For networking issues like desyncs, both the host and client should provide log files.
 * **Log File Location:** `Sons Of The Forest\_Redloader\Latest.log`
+
+## Special Thanks
+
+* **TheSuperSnooper:** For helping me test and debug the mod
+* **Spidy:** For testing and providing feedback
+* **ToniMacaroni:** For redloader and all his help
