@@ -88,6 +88,12 @@ namespace LootRespawnControl.Harmony
                         Sons.Gameplay.PickUp PickUpComponent = SpawnDefinitions[i]._prefab?.transform.GetComponent<Sons.Gameplay.PickUp>() ?? null;
                         if (PickUpComponent == null || LootRespawnControl.ItemIdsBlacklistBreakable.Contains(PickUpComponent._itemId))
                         {
+                            //Special Case Propane
+                            if(SpawnDefinitions[i]._prefab.name == "ExplosionPropane")
+                            {
+                                if (Config.ConsoleLogging.Value) { RLog.Msg($"Special Case Propane: {__instance.name}"); }
+                                break;
+                            }
                             //if any is blacklisted set true and break out of loop
                             HasBlacklisted = true;
                             if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist or empty pickup component in array: : {__instance.name}"); }

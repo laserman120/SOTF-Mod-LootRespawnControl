@@ -23,21 +23,54 @@ namespace LootRespawnControl
 
             public static string GenerateLootID(Vector3 position, Quaternion rotation, string name)
             {
-                string combinedString = $"{position.x:F6}-{position.y:F6}-{position.z:F6}-{rotation.x:F6}-{rotation.y:F6}-{rotation.z:F6}-{rotation.w:F6}-{name.Substring(0, 3)}";
-                using (MD5 md5Hash = MD5.Create())
-                {
-                    byte[] bytes = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(combinedString));
-                    // Convert the byte array to hexadecimal string
-                    StringBuilder builder = new StringBuilder();
-                    for (int i = 0; i < bytes.Length; i++)
-                    {
-                        builder.Append(bytes[i].ToString("x2"));
-                    }
+                byte[] positionBytes = Vector3ToBytes(position);
+                byte[] rotationBytes = QuaternionToBytes(rotation);
 
-                    return builder.ToString();
+                string safeName = "";
+                if (!string.IsNullOrEmpty(name))
+                {
+                    safeName = name.Length >= 3 ? name.Substring(0, 3) : name; // Take first 3 characters, or whole name if shorter
                 }
 
-                
+                byte[] nameBytes = Encoding.UTF8.GetBytes(safeName);
+
+                using (MD5 md5Hash = MD5.Create())
+                {
+                    using (MemoryStream ms = new MemoryStream())
+                    {
+                        ms.Write(positionBytes, 0, positionBytes.Length);
+                        ms.Write(rotationBytes, 0, rotationBytes.Length);
+                        ms.Write(nameBytes, 0, nameBytes.Length);
+
+                        byte[] bytes = md5Hash.ComputeHash(ms.ToArray());
+                        StringBuilder builder = new StringBuilder();
+                        for (int i = 0; i < bytes.Length; i++)
+                        {
+                            builder.Append(bytes[i].ToString("x2"));
+                        }
+                        return builder.ToString();
+                    }
+                }
+            }
+
+
+            public static byte[] Vector3ToBytes(Vector3 vector)
+            {
+                byte[] bytes = new byte[12]; // 3 floats * 4 bytes
+                Buffer.BlockCopy(BitConverter.GetBytes(vector.x), 0, bytes, 0, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(vector.y), 0, bytes, 4, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(vector.z), 0, bytes, 8, 4);
+                return bytes;
+            }
+
+            public static byte[] QuaternionToBytes(Quaternion quaternion)
+            {
+                byte[] bytes = new byte[16]; // 4 floats * 4 bytes
+                Buffer.BlockCopy(BitConverter.GetBytes(quaternion.x), 0, bytes, 0, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(quaternion.y), 0, bytes, 4, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(quaternion.z), 0, bytes, 8, 4);
+                Buffer.BlockCopy(BitConverter.GetBytes(quaternion.w), 0, bytes, 12, 4);
+                return bytes;
             }
 
             public static string SaveCollectedLoot()
@@ -62,15 +95,20 @@ namespace LootRespawnControl
                 //Check if the user is in singleplayer or if the user is in multiplayer but the host has not sent any config data
                 if (BoltNetwork.isRunning && BoltNetwork.isClient && !LootRespawnControl.recievedConfigData)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is not the host / in singleplayer and has not recieved any config data... setting local config values and forcing networking off"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Client is in multiplayer and has not recieved any config data... setting local config values and forcing networking off"); }
                     ConfigManager.SetLocalConfigValues();
                     ConfigManager.SetMultiplayerConfigValue(false);
                     return;
                 }
-                else if (BoltNetwork.isServerOrNotRunning)
+                else if (BoltNetwork.isRunning && BoltNetwork.isServer)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is the host / in singleplayer... setting local config values"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is the host... setting local config values"); }
                     ConfigManager.SetLocalConfigValues();
+                } else if(!BoltNetwork.isRunning)
+                {
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is in singleplayer... setting local config values"); }
+                    ConfigManager.SetLocalConfigValues();
+                    ConfigManager.SetMultiplayerConfigValue(false);
                 }
 
                 //now after the configuration is set we handle the saved data
@@ -80,7 +118,13 @@ namespace LootRespawnControl
                     var serializableSet = JsonConvert.DeserializeObject<SerializableHashSet<LootData>>(jsonData);
 
                     //Cleanup the data
-                    LootRespawnManager.collectedLootIds = CleanupCollected(serializableSet.ToHashSet());
+                    if (BoltNetwork.isServerOrNotRunning)
+                    {
+                        LootRespawnManager.collectedLootIds = CleanupCollected(serializableSet.ToHashSet());
+                    } else
+                    {
+                        LootRespawnManager.collectedLootIds = serializableSet.ToHashSet();
+                    }
                 }
 
                 //if we have recieved data merge it now
@@ -119,12 +163,10 @@ namespace LootRespawnControl
                 if (timestamp == 0) { timestamp = LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()); }
                 collectedLootIds.Add(new LootData(identifier, timestamp, itemId));
 
-                //DO not continue if not the host or singleplayer.
-                if (BoltNetwork.isClient) { return; }
                 if (isBreakable && ConfigManager.enableMultiplayer && ConfigManager.IsBreakablesNetworked())
                 {
                     if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Breakable Pickup Event...: {objectName}"); }
-                    NetworkManager.SendPickupEvent(objectName, identifier, 0, timestamp);
+                    NetworkManager.SendPickupEvent(objectName, identifier, LootRespawnControl._breakableId, timestamp);
                 }
             }
 

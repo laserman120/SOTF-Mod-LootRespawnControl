@@ -135,7 +135,7 @@ namespace LootRespawnControl.Harmony
                     
 
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name}"); }
+                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name} with data: {__instance.transform.position.x:F4}-{__instance.transform.position.y:F4}-{__instance.transform.position.z:F4}-{__instance.transform.rotation.x:F4}-{__instance.transform.rotation.y:F4}-{__instance.transform.rotation.z:F4}-{__instance.transform.rotation.w:F4}-{__instance.transform.name.Substring(0, 3)}"); }
                     return true;
                 }
 

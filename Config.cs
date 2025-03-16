@@ -259,7 +259,6 @@ public static class Config
             "Sync Materials",
             "Will synchronize pickup of crafting materials in multiplayer (Duct Tape, Rope, Coins...)");
 
-
         //food
         allowFood = Category.CreateEntry(
             "AllowFood",
