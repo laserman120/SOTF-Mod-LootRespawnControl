@@ -188,7 +188,7 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 
 ## Networking
 
-* **Enabling Synchronization:** To synchronize loot across players, enable the "Should pickups be synced across players?" option.
+* **Enabling Synchronization:** To synchronize loot across players, enable the "Should pickups be synced across players?" option. When any player collects loot, it will be removed for everyone else as well.
 * **Host Configuration:** When a client connects to a server with networking enabled, the client will use the host's configuration to ensure consistency. The client's local configuration will be ignored.
 * **Mod Compatibility:** All players must have the mod installed and use the same version to join a networked game. Players without the mod or with outdated versions will not be able to connect.
 
