@@ -188,9 +188,11 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 
 ## Networking
 
-* **Enabling Synchronization:** To synchronize loot across players, enable the "Should pickups be synced across players?" option. When any player collects loot, it will be removed for everyone else as well.
+* **Enabling Synchronization:** To synchronize loot across players, enable the "Should pickups be synced across players?" option. When any player collects loot, which is enabled to be networked, it will be removed for everyone else as well.
 * **Host Configuration:** When a client connects to a server with networking enabled, the client will use the host's configuration to ensure consistency. The client's local configuration will be ignored.
 * **Mod Compatibility:** All players must have the mod installed and use the same version to join a networked game. Players without the mod or with outdated versions will not be able to connect.
+* **Dedicated Servers** The dedicated server requires the mod to be installed as well as configured. The config file will be created after the first start with the mod, after any changes the server does require a reboot.
+   * The mod is **only** required on the server when networking features are in use.
 
 ## Good to Know / Important Interactions
 
@@ -202,6 +204,9 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
     * If an item is present in both a whitelist and a blacklist, the blacklist will take priority, and the item will not spawn.
 * **Client config is ignored:**
     * When connecting to a host with networking enabled the clients config file will be ignored, and the clients game will use the hosts config.
+* **Joining a networked game without the mod installed/wrong version:**
+    * Attempting to join a networking game with the wrong mod version or without the mod installed will lead to the player being kicked from the server. On public servers implicitly state in the server title that the mod is required.
+
 
 
 ## Console Logging (Debugging)
