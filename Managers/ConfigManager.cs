@@ -1,4 +1,5 @@
-﻿using RedLoader;
+﻿using LootRespawnControl.Managers;
+using RedLoader;
 using SonsSdk;
 using System;
 using System.Collections.Generic;
@@ -174,10 +175,8 @@ namespace LootRespawnControl
             Dictionary<string, string> configManagerFields = GetConfigManagerFields();
             Dictionary<string, string> configFields = Config.GetLocalConfigFields();
 
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg($"Synchronizing to local Config! ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
-            }
+            DebugManager.ConsoleLog($"Synchronizing to local Config! ConfigManagerFields = {configManagerFields.Count}   configFields = {configFields.Count}");
+            
             foreach (var kvp in configManagerFields)
             {
                 if (configFields.ContainsKey(kvp.Key))
@@ -194,7 +193,7 @@ namespace LootRespawnControl
                         }
                         catch (Exception ex)
                         {
-                            RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
+                            DebugManager.ConsoleLogError($"Error syncing {kvp.Key}: {ex.Message}");
                         }
                     } 
                 }
@@ -225,7 +224,7 @@ namespace LootRespawnControl
                 }
                 catch (Exception ex)
                 {
-                    RLog.Msg($"Error getting property {property.Name}: {ex.Message}");
+                    DebugManager.ConsoleLogError($"Error getting property {property.Name}: {ex.Message}");
                 }
             }
             return configValues;
@@ -270,7 +269,7 @@ namespace LootRespawnControl
                         }
                         catch (Exception ex)
                         {
-                            RLog.Msg($"Error syncing {kvp.Key}: {ex.Message}");
+                            DebugManager.ConsoleLogError($"Error syncing {kvp.Key}: {ex.Message}");
                         }
                     }
                 }

@@ -1,16 +1,10 @@
 ﻿using Endnight.Utilities;
 using HarmonyLib;
+using LootRespawnControl.Managers;
 using RedLoader;
 using Sons.Environment;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
-using Sons.Gameplay;
 using static LootRespawnControl.LootManager;
-using static RedLoader.RLog;
 
 namespace LootRespawnControl.Harmony
 {
@@ -18,7 +12,6 @@ namespace LootRespawnControl.Harmony
 
     internal class PickUp
     {
-
         public static List<Sons.Gameplay.PickUp> PickupsPendingCheck = new List<Sons.Gameplay.PickUp>();
 
         //Patch the spawning of pickups
@@ -56,13 +49,20 @@ namespace LootRespawnControl.Harmony
 
             if (ConfigManager.IsItemIdBlocked(__instance._itemId))
             {
+                if (__instance.name.Contains("Clone")) { return; }
+
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
                 if (PickupGui == null)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented destruction of: {__instance.name} due to missing PickupGui"); return; }
+                    DebugManager.ConsoleLog($"Prevented destruction of: {__instance.name} due to missing PickupGui"); return;
                 }
 
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying due to blocked config: {__instance.name}"); }
+                if (__instance.name.Contains("SkinningPickupHelper"))
+                {
+                    DebugManager.ConsoleLogWarning($"Prevented destruction of: {__instance.name} with id {__instance._itemId} due to being a skinning pickup helper"); return;
+                }
+
+                DebugManager.ConsoleLog($"Destroying due to blocked config: {__instance.name}");
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
 
@@ -71,10 +71,16 @@ namespace LootRespawnControl.Harmony
                 if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId) && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
+                    DebugManager.ConsoleLog($"Removed from collected due to time: {__instance.name}");
                     return;
                 }
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
+                DebugManager.ConsoleLog($"Destroying: {__instance.name}");
+                //Create holder for respawning...
+                if(ConfigManager.IsGlobalTimerEnabled() || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId))
+                {
+                    TimedLootRespawnManager.CreateRespawnDataHolder(__instance._destroyTarget, identifierComponent, __instance._itemId);
+                }
+                //Destroy the pickup
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }
@@ -86,13 +92,13 @@ namespace LootRespawnControl.Harmony
             private static bool Prefix(Sons.Gameplay.PickUp __instance)
             {
                 LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-                if (identifierComponent == null) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing IdentifierComponent"); } return true; }
+                if (identifierComponent == null) { DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing IdentifierComponent"); return true; }
 
                 //hotfix for interaction components which also feature a pickup component of any type
                 Transform PickupGui = __instance.transform.Find("_PickupGui_");
                 if (PickupGui == null && !IsValidRadio(__instance))
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Prevented collection of: {__instance.name} due to missing PickupGui "); return true; }
+                    DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing PickupGui "); return true;
                 }
 
                 if (__instance.name.Contains("Clone")) { return true; }
@@ -110,7 +116,7 @@ namespace LootRespawnControl.Harmony
                             // Coroutine checks for a reply
                             // Coroutine handles the reply and runs the collect method again
 
-                            if (Config.ConsoleLogging.Value) { RLog.Msg($"Set hash to awaiting reply, sending request: {__instance.name}"); }
+                            DebugManager.ConsoleLog($"Set hash to awaiting reply, sending request: {__instance.name}");
                             __instance.gameObject.SetActive(false);
                             AddHash(identifier);
                             NetworkManager.SendPickupRequest(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
@@ -124,7 +130,7 @@ namespace LootRespawnControl.Harmony
                             } else
                             {
                                 RemoveHash(identifier);
-                                if (Config.ConsoleLogging.Value) { RLog.Msg($"Hash is true, removing it from the list and continuing execution: {__instance.name}"); }
+                                DebugManager.ConsoleLog($"Hash is true, removing it from the list and continuing execution: {__instance.name}");
                             }
                         }
                     } else if(BoltNetwork.isRunning && ConfigManager.ShouldIdBeNetworked(__instance._itemId))
@@ -135,14 +141,20 @@ namespace LootRespawnControl.Harmony
                     
 
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.name} with data: {__instance.transform.position.x:F4}-{__instance.transform.position.y:F4}-{__instance.transform.position.z:F4}-{__instance.transform.rotation.x:F4}-{__instance.transform.rotation.y:F4}-{__instance.transform.rotation.z:F4}-{__instance.transform.rotation.w:F4}-{__instance.transform.name.Substring(0, 3)}"); }
+                    //Create holder for respawning...
+                    if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId))
+                    {
+                        TimedLootRespawnManager.CreateRespawnDataHolder(__instance._destroyTarget, identifierComponent, __instance._itemId);
+                    }
+
+                    DebugManager.ConsoleLog($"Added: {__instance.name} with data: {__instance.transform.position.x:F4}-{__instance.transform.position.y:F4}-{__instance.transform.position.z:F4}-{__instance.transform.rotation.x:F4}-{__instance.transform.rotation.y:F4}-{__instance.transform.rotation.z:F4}-{__instance.transform.rotation.w:F4}-{__instance.transform.name.Substring(0, 3)}");
                     return true;
                 }
 
                 if (LootRespawnManager.IsLootCollected(identifier))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed Loot From collected: {__instance.name}"); return true; }
+                    DebugManager.ConsoleLog($"Removed Loot From collected: {__instance.name}"); return true;
                 }
                 return true;
             }
@@ -157,7 +169,7 @@ namespace LootRespawnControl.Harmony
             {
                 if (GetHashBool(identifier) == true)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Ack recieved, running collect: {__instance.name}");}
+                    DebugManager.ConsoleLog($"Ack recieved, running collect: {__instance.name}");
                     __instance.Collect();
                     yield break;
                 }
@@ -165,7 +177,7 @@ namespace LootRespawnControl.Harmony
                 yield return null; // Wait for the next frame
             }
 
-            if (Config.ConsoleLogging.Value) { RLog.Msg($"Coro stopped with timeout: {identifier}"); }
+            DebugManager.ConsoleLog($"Coro stopped with timeout: {identifier}");
 
             if (LootRespawnManager.IsLootCollected(identifier))
             {
@@ -176,13 +188,13 @@ namespace LootRespawnControl.Harmony
             {
                 if(GetHashBool(identifier) == false)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Warning($"DESYNC DETECTED! Pickup already collected on the server side, but not on the client. Destroying Pickup and marking as collected! {identifier}"); }
+                    DebugManager.ConsoleLogWarning($"DESYNC DETECTED! Pickup already collected on the server side, but not on the client. Destroying Pickup and marking as collected! {identifier}");
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
                     GameObject.Destroy(__instance.gameObject);
                     yield break;
                 }
 
-                if (Config.ConsoleLogging.Value) { RLog.Warning($"Host failed to respond to pickup request! {identifier}"); }
+                DebugManager.ConsoleLogWarning($"Host failed to respond to pickup request! {identifier}");
                 __instance.gameObject.SetActive(true);
             }
         }

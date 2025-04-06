@@ -24,6 +24,10 @@ using static SonsSdk.ItemTools;
 using System.Security.AccessControl;
 using static LootRespawnControl.LootManager.LootRespawnManager;
 using System.Linq;
+using LootRespawnControl.Managers;
+using TheForest.Utils;
+using Sons.Prefabs;
+using Sons.Items.Core;
 
 namespace LootRespawnControl;
 
@@ -225,10 +229,10 @@ public class LootRespawnControl : SonsMod
         {
             //Initialize event handler
             EventHandler.Create();
-            if (Config.ConsoleLogging.Value)
-            {
-                RLog.Msg("User in Singleplayer or Hosting!");
-            }
+
+            //initialize the respawnManager
+            DebugManager.ConsoleLog("User in Singleplayer or Hosting!");
+            GameCommands.RegisterFromType(typeof(DebugManager));
             return;
         }
 
@@ -236,6 +240,9 @@ public class LootRespawnControl : SonsMod
         {
             HandleStartupLootData(null);
         }
+
+
+        GameCommands.RegisterFromType(typeof(DebugManager));
     }
 
     protected override void OnSonsSceneInitialized(ESonsScene sonsScene)
@@ -253,10 +260,7 @@ public class LootRespawnControl : SonsMod
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         DoubleCheckedCollectedLoot = false;
         recievedConfigData = false;
-        if (Config.ConsoleLogging.Value)
-        {
-            RLog.Msg("Exited World, Reset Values");
-        }
+        DebugManager.ConsoleLog("Exited World, Reset Values");
     }
 
     public static void HandlePickupDataRecieved(string objectName, string identifier, int pickupId, long timestamp)
@@ -269,16 +273,16 @@ public class LootRespawnControl : SonsMod
                 LootIdentifier lootIdentifier = pickupObject.GetComponent<LootIdentifier>();
                 if (lootIdentifier != null && lootIdentifier.Identifier == identifier)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Found {objectName} destroying..."); }
+                    DebugManager.ConsoleLog($"Found {objectName} destroying...");
                     GameObject.Destroy(pickupObject);
                 }
                 else
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Unable to find {objectName} with correct identifier!"); }
+                    DebugManager.ConsoleLog($"Unable to find {objectName} with correct identifier!");
                 }
             }
         }
-        if (Config.ConsoleLogging.Value) { RLog.Msg($"Added loot from recieved packet: Name: {objectName} Identifier: {identifier} Timestamp: {timestamp}"); }
+        DebugManager.ConsoleLog($"Added loot from recieved packet: Name: {objectName} Identifier: {identifier} Timestamp: {timestamp}");
         MarkLootAsCollected(identifier, null, pickupId, false, timestamp);
     }
 
@@ -321,23 +325,26 @@ public class LootRespawnControl : SonsMod
 
         return ids;
     }
-
-    [DebugCommand("fullresetlootrespawncontrol")]
-    private void FullResetLootRespawnControl()
-    {
-        LootRespawnManager.collectedLootIds = new HashSet<LootData>();
-        SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
-    }
 }
 
 
 [RegisterTypeInIl2Cpp]
 public class LootIdentifier : MonoBehaviour
 {
-    public string Identifier { get; private set; }
+    public string Identifier { get; set; }
+    public Vector3 Position { get; private set; }
+    public Quaternion Rotation { get; private set; }
+    public string LootName { get; private set; }
+
+    public bool enforceIdentifier = false;
+
     public void GenerateIdentifier()
     {
+        if (enforceIdentifier) return;
         Identifier = LootRespawnManager.GenerateLootID(transform.position, transform.rotation, transform.name);
+        Position = transform.position;
+        Rotation = transform.rotation;
+        LootName = transform.name;
     }
     private void Awake()
     {

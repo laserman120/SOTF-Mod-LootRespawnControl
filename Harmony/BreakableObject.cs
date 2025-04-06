@@ -1,13 +1,8 @@
 ﻿using Endnight.Utilities;
 using HarmonyLib;
+using LootRespawnControl.Managers;
 using RedLoader;
 using Sons.Environment;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Sons.Gameplay;
 using static LootRespawnControl.LootManager;
 
 namespace LootRespawnControl.Harmony
@@ -27,7 +22,7 @@ namespace LootRespawnControl.Harmony
                 {
                     if (__instance.transform.name.Contains("BreakableSticksInteraction"))
                     {
-                        RLog.Warning("Attempted to remove BreakableSticksInteraction! Returning out and removing hash...");
+                        DebugManager.ConsoleLogWarning("Attempted to remove BreakableSticksInteraction! Returning out and removing hash...");
                         LootRespawnManager.RemoveLootFromCollected(identifier);
                         return;
                     }
@@ -35,7 +30,7 @@ namespace LootRespawnControl.Harmony
                     if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                     {
                         LootRespawnManager.RemoveLootFromCollected(identifier);
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
+                        DebugManager.ConsoleLog($"Removed from collected due to time: {__instance.name}");
                         return;
                     }
 
@@ -43,11 +38,17 @@ namespace LootRespawnControl.Harmony
                     if (ConfigManager.IsBreakableAllowed() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
                     {
                         LootRespawnManager.RemoveLootFromCollected(identifier);
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Removed from collected due to time: {__instance.name}"); }
+                    DebugManager.ConsoleLog($"Removed from collected due to time: {__instance.name}");
                         return;
                     }
 
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Destroying: {__instance.name}"); }
+                    DebugManager.ConsoleLog($"Destroying: {__instance.name}");
+
+                    if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.allowBreakablesTimed)
+                    {
+                        TimedLootRespawnManager.CreateRespawnDataHolder(__instance.transform.gameObject, identifierComponent, LootRespawnControl._breakableId);
+                    }
+
                     UnityEngine.Object.Destroy(__instance.transform.gameObject);
                 }
             }
@@ -72,10 +73,16 @@ namespace LootRespawnControl.Harmony
                 if (PickUp != null && !ConfigManager.IsBreakableAllowed())
                 {
                     //return out if blacklisted item would be dropped
-                    if (LootRespawnControl.ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist"); } return; }
+                    if (LootRespawnControl.ItemIdsBlacklistBreakable.Contains(PickUp._itemId)) { DebugManager.ConsoleLog($"Blocked due to blacklist"); return; }
 
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.gameObject.name, LootRespawnControl._breakableId, true);
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
+
+                    if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.allowBreakablesTimed)
+                    {
+                        TimedLootRespawnManager.CreateRespawnDataHolder(__instance.transform.gameObject, identifierComponent, LootRespawnControl._breakableId);
+                    }
+
+                    DebugManager.ConsoleLogError($"Added: {__instance.gameObject.name}");
                     return;
                 }
                 if (PickUpArrayLength > 0 && !ConfigManager.IsBreakableAllowed())
@@ -91,12 +98,12 @@ namespace LootRespawnControl.Harmony
                             //Special Case Propane
                             if(SpawnDefinitions[i]._prefab.name == "ExplosionPropane")
                             {
-                                if (Config.ConsoleLogging.Value) { RLog.Msg($"Special Case Propane: {__instance.name}"); }
+                                DebugManager.ConsoleLog($"Special Case Propane: {__instance.name}");
                                 break;
                             }
                             //if any is blacklisted set true and break out of loop
                             HasBlacklisted = true;
-                            if (Config.ConsoleLogging.Value) { RLog.Msg($"Blocked due to blacklist or empty pickup component in array: : {__instance.name}"); }
+                            DebugManager.ConsoleLog($"Blocked due to blacklist or empty pickup component in array: : {__instance.name}");
                             break;
                         }
                     }
@@ -104,7 +111,13 @@ namespace LootRespawnControl.Harmony
                     {
                         //if not blacklisted and only includes pickup components store the hash
                         LootRespawnManager.MarkLootAsCollected(identifier, __instance.gameObject.name, LootRespawnControl._breakableId, true);
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Added: {__instance.gameObject.name}"); }
+
+                        if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.allowBreakablesTimed)
+                        {
+                            TimedLootRespawnManager.CreateRespawnDataHolder(__instance.transform.gameObject, identifierComponent, LootRespawnControl._breakableId);
+                        }
+
+                        DebugManager.ConsoleLog($"Added: {__instance.gameObject.name}");
                     }
                     return;
                 }

@@ -1,4 +1,5 @@
 ﻿using Alt.Json;
+using LootRespawnControl.Managers;
 using RedLoader;
 using Sons.Environment;
 using System;
@@ -95,18 +96,18 @@ namespace LootRespawnControl
                 //Check if the user is in singleplayer or if the user is in multiplayer but the host has not sent any config data
                 if (BoltNetwork.isRunning && BoltNetwork.isClient && !LootRespawnControl.recievedConfigData)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Client is in multiplayer and has not recieved any config data... setting local config values and forcing networking off"); }
+                    DebugManager.ConsoleLog($"Client is in multiplayer and has not recieved any config data... setting local config values and forcing networking off"); 
                     ConfigManager.SetLocalConfigValues();
                     ConfigManager.SetMultiplayerConfigValue(false);
                     return;
                 }
                 else if (BoltNetwork.isRunning && BoltNetwork.isServer)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is the host... setting local config values"); }
+                    DebugManager.ConsoleLog($"User is the host... setting local config values");
                     ConfigManager.SetLocalConfigValues();
                 } else if(!BoltNetwork.isRunning)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"User is in singleplayer... setting local config values"); }
+                    DebugManager.ConsoleLog($"User is in singleplayer... setting local config values");
                     ConfigManager.SetLocalConfigValues();
                     ConfigManager.SetMultiplayerConfigValue(false);
                 }
@@ -130,13 +131,16 @@ namespace LootRespawnControl
                 //if we have recieved data merge it now
                 if (recievedLootIds.Count > 0)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Syncing local collected data with networked collected data"); }
+                    DebugManager.ConsoleLog($"Syncing local collected data with networked collected data");
                     //We do not clean here, the host already cleaned the data for us, trust the host
                     LootRespawnManager.collectedLootIds = MergeCollectedLoot(LootRespawnManager.collectedLootIds, recievedLootIds);
 
                     //Reset recieved data
                     recievedLootIds = new HashSet<LootData>();
                 }
+
+                //Initialize the loot respawn manager
+                TimedLootRespawnManager.IntitializeManager();
 
                 //Double check any loaded objects that were created before loading has occured
                 Harmony.PickUp.PickupsPendingCheck.ForEach(PickUp =>
@@ -165,7 +169,7 @@ namespace LootRespawnControl
 
                 if (isBreakable && ConfigManager.enableMultiplayer && ConfigManager.IsBreakablesNetworked())
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Sending Breakable Pickup Event...: {objectName}"); }
+                    DebugManager.ConsoleLog($"Sending Breakable Pickup Event...: {objectName}");
                     NetworkManager.SendPickupEvent(objectName, identifier, LootRespawnControl._breakableId, timestamp);
                 }
             }
@@ -186,7 +190,7 @@ namespace LootRespawnControl
                         preservedLoot.Add(lootData);
                     } else
                     {
-                        if (Config.ConsoleLogging.Value) { RLog.Msg($"Removing loot item with ID {lootData.Id} and Hash {lootData.Hash} due to configuration change."); }
+                        DebugManager.ConsoleLog($"Removing loot item with ID {lootData.Id} and Hash {lootData.Hash} due to configuration change.");
                     }
                 }
 
@@ -198,7 +202,7 @@ namespace LootRespawnControl
                 HashSet<LootData> networkedLoot = new HashSet<LootData>();
                 if (collectedLootIds == null)
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Collected loot is null!"); }
+                    DebugManager.ConsoleLog($"Collected loot is null!");
                     return networkedLoot;
                 }
 

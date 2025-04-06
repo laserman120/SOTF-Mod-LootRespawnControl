@@ -1,7 +1,6 @@
 using RedLoader;
 using System.Reflection;
 using System.Text;
-using static RedLoader.RLog;
 
 namespace LootRespawnControl;
 

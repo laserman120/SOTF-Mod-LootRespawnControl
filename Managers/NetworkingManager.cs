@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Bolt;
+using LootRespawnControl.Managers;
 using RedLoader;
 using RedLoader.Utils;
 using Sons.Multiplayer;
@@ -31,7 +32,7 @@ namespace LootRespawnControl
         public override void Connected(BoltConnection connection)
         {
             if (!Config.enableMultiplayer.Value) { return; }
-            if (Config.ConsoleLogging.Value){ RLog.Msg("Player connected, SteamID: " + MultiplayerUtilities.GetSteamId(connection)); }
+            DebugManager.ConsoleLog("Player connected, SteamID: " + MultiplayerUtilities.GetSteamId(connection));
             NetworkManager.SendConfigData(connection);
         }
     }

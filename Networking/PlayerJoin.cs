@@ -1,14 +1,10 @@
 ﻿using Alt.Json;
 using Bolt;
+using LootRespawnControl.Managers;
 using RedLoader;
 using Sons.Multiplayer;
 using SonsSdk.Networking;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UdpKit;
 using UnityEngine;
 using static LootRespawnControl.LootManager;
@@ -31,31 +27,24 @@ namespace LootRespawnControl.Networking
                 var packet = NewPacket(modVersion.Length * 2, GlobalTargets.OnlyServer);
                 packet.Packet.WriteString(modVersion);
                 Send(packet);
-                RLog.Msg($"Sent confirmation with mod version: {modVersion}");
+                DebugManager.ConsoleLog($"Sent confirmation with mod version: {modVersion}");
             }
 
             private void HandleReceivedConfirmation(string receivedModVersion, BoltConnection connection)
             {
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg($"Received confirmation with mod version: {receivedModVersion}   from: " + MultiplayerUtilities.GetSteamId(connection));
-                }
+                DebugManager.ConsoleLog($"Received confirmation with mod version: {receivedModVersion}   from: " + MultiplayerUtilities.GetSteamId(connection));
 
                 if (LootRespawnControl._modVersion != receivedModVersion)
                 {
-                    if (Config.ConsoleLogging.Value)
-                    {
-                        RLog.Msg($"Kicking player due to mismatching version: {receivedModVersion}  SteamID:" + MultiplayerUtilities.GetSteamId(connection));
-                    }
+                    DebugManager.ConsoleLog($"Kicking player due to mismatching version: {receivedModVersion}  SteamID:" + MultiplayerUtilities.GetSteamId(connection));
+                    
                     KickPlayer(connection);
                     connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
                 }
                 else
                 {
-                    if (Config.ConsoleLogging.Value)
-                    {
-                        RLog.Msg("Config Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
-                    }
+                    DebugManager.ConsoleLog("Config Sync Confirmed from " + MultiplayerUtilities.GetSteamId(connection));
+                    
 
                     connectionTimers.Remove(MultiplayerUtilities.GetSteamId(connection));
                     NetworkManager.SendLootData(NetworkManager.GetHostLootData(), connection);
@@ -79,10 +68,8 @@ namespace LootRespawnControl.Networking
                 }
                 foreach (var connectionId in timedOutConnections)
                 {
-                    if (Config.ConsoleLogging.Value)
-                    {
-                        RLog.Msg($"Kicked connecting player due to timeout! " + connectionId);
-                    }
+                    DebugManager.ConsoleLog($"Kicked connecting player due to timeout! " + connectionId);
+                    
                     KickPlayer(MultiplayerUtilities.GetConnectionFromSteamId(connectionId));
                     connectionTimers.Remove(connectionId);
                 }
@@ -138,7 +125,7 @@ namespace LootRespawnControl.Networking
             {
                 int packetSize = sizeof(int) + chunk.Length * 2;
                 var packet = NewPacket(packetSize, connection);
-                if (Config.ConsoleLogging.Value) { RLog.Msg("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk); }
+                DebugManager.ConsoleLog("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk);
                 packet.Packet.WriteString(chunk);
                 Send(packet);
                 ClearAckFlag(connection); // Clear the ACK flag before sending
@@ -156,7 +143,7 @@ namespace LootRespawnControl.Networking
                 else
                 {
                     receivedConfigData += chunk;
-                    if (Config.ConsoleLogging.Value) { RLog.Msg("Received config data chunk..."); }
+                    DebugManager.ConsoleLog("Received config data chunk...");
                     NetworkManager.SendConfigDataAck(); // Send ACK
                 }
             }
@@ -165,7 +152,7 @@ namespace LootRespawnControl.Networking
             {
                 //HANDLE DATA
                 ConfigManager.DeserializeConfig(configData);
-                if (Config.ConsoleLogging.Value) { RLog.Msg("Finished receiving Config Data  " + configData); }
+                DebugManager.ConsoleLog("Finished receiving Config Data  " + configData);
                 LootRespawnControl.recievedConfigData = true;
                 NetworkManager.SendConfigSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
             }
@@ -209,12 +196,12 @@ namespace LootRespawnControl.Networking
                 var packet = NewPacket(16, target);
                 packet.Packet.WriteString("ACK");
                 Send(packet);
-                RLog.Msg("Sent Config Data ACK");
+                DebugManager.ConsoleLog("Sent Config Data ACK");
             }
 
             public override void Read(UdpPacket packet, BoltConnection fromConnection)
             {
-                RLog.Msg("Received Config Data ACK");
+                DebugManager.ConsoleLog("Received Config Data ACK");
                 ConfigDataEvent.SetAckReceived(fromConnection);
             }
         }
@@ -283,7 +270,7 @@ namespace LootRespawnControl.Networking
             {
                 int packetSize = sizeof(int) + chunk.Length * 2;
                 var packet = NewPacket(packetSize, connection);
-                if (Config.ConsoleLogging.Value){ RLog.Msg("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk); }
+                DebugManager.ConsoleLog("Sending chunk with size: " + packetSize + "    Packet Data:   " + chunk);
                 packet.Packet.WriteString(chunk);
                 Send(packet);
                 ClearAckFlag(connection); // Clear the ACK flag before sending
@@ -301,7 +288,7 @@ namespace LootRespawnControl.Networking
                 else
                 {
                     receivedLootData += chunk;
-                    if (Config.ConsoleLogging.Value) { RLog.Msg("Received loot data chunk...");}
+                    DebugManager.ConsoleLog("Received loot data chunk...");
                     NetworkManager.SendLootDataAck(); // Send ACK
                 }
             }
@@ -309,7 +296,7 @@ namespace LootRespawnControl.Networking
             private void HandleReceivedData(string lootDataJson, BoltConnection target)
             {
                 HashSet<LootData> receivedLootData = JsonConvert.DeserializeObject<HashSet<LootData>>(lootDataJson);
-                if (Config.ConsoleLogging.Value){ RLog.Msg("Finished receiving Loot Data: " + receivedLootData.Count); }
+                DebugManager.ConsoleLog("Finished receiving Loot Data: " + receivedLootData.Count);
                 LootRespawnManager.recievedLootIds = receivedLootData;
             }
 
@@ -352,12 +339,12 @@ namespace LootRespawnControl.Networking
                 var packet = NewPacket(16, target);
                 packet.Packet.WriteString("ACK");
                 Send(packet);
-                RLog.Msg("Sent Loot Data ACK");
+                DebugManager.ConsoleLog("Sent Loot Data ACK");
             }
 
             public override void Read(UdpPacket packet, BoltConnection fromConnection)
             {
-                RLog.Msg("Received Loot Data ACK");
+                DebugManager.ConsoleLog("Received Loot Data ACK");
                 LootDataEvent.SetAckReceived(fromConnection);
             }
         }

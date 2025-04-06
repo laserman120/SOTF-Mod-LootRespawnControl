@@ -1,15 +1,9 @@
 ﻿using Bolt;
 using RedLoader;
 using SonsSdk.Networking;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UdpKit;
-using UnityEngine;
-
 using LootRespawnControl.Harmony;
+using LootRespawnControl.Managers;
 
 namespace LootRespawnControl.Networking
 {
@@ -41,10 +35,7 @@ namespace LootRespawnControl.Networking
             private void HandleNetworkedPickup(string pickupName, string pickupHash, int pickupId, long time)
             {
                 // Implement your logic here for handling the received pickup data
-                if (Config.ConsoleLogging.Value)
-                {
-                    RLog.Msg($"Received Pickup: {pickupName}, It: {pickupId}, Hash: {pickupHash}, Time: {time}");
-                }
+                DebugManager.ConsoleLog($"Received Pickup: {pickupName}, It: {pickupId}, Hash: {pickupHash}, Time: {time}");
 
                 //If the player has the pickup hash in the awaiting reply, as well as the bool set to true we do not need to handle the pickup data.
                 if (PickUp.HashExists(pickupHash) && PickUp.GetHashBool(pickupHash) == true) 
@@ -89,11 +80,11 @@ namespace LootRespawnControl.Networking
             private void HandlePickupRequest(string pickupName, string pickupHash, int pickupId, long time, BoltConnection fromConnection)
             {
                 // Implement your logic here for handling the received pickup data
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Received Pickup request for: {pickupName} {pickupHash}"); }
+                DebugManager.ConsoleLog($"Received Pickup request for: {pickupName} {pickupHash}");
 
                 if (!LootManager.LootRespawnManager.IsLootCollected(pickupHash))
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Accepting Pickup request for: {pickupName} {pickupHash}"); }
+                    DebugManager.ConsoleLog($"Accepting Pickup request for: {pickupName} {pickupHash}");
                     LootRespawnControl.HandlePickupDataRecieved(pickupName, pickupHash, pickupId, time);
                     //Return true to allow package to go through
                     NetworkManager.SendPickupAck(pickupHash, true, fromConnection);
@@ -101,7 +92,7 @@ namespace LootRespawnControl.Networking
                     NetworkManager.SendPickupEvent(pickupName, pickupHash, pickupId, time);
                 } else
                 {
-                    if (Config.ConsoleLogging.Value) { RLog.Msg($"Denying Pickup request for: {pickupName} {pickupHash}"); }
+                    DebugManager.ConsoleLog($"Denying Pickup request for: {pickupName} {pickupHash}");
                     //Return false to deny the request
                     NetworkManager.SendPickupAck(pickupHash, false, fromConnection);
                 }
@@ -137,7 +128,7 @@ namespace LootRespawnControl.Networking
 
             private void HandleAckRecieved(string pickupHash, bool confirm)
             {
-                if (Config.ConsoleLogging.Value) { RLog.Msg($"Recieved ack for: {pickupHash} {confirm}"); }
+                DebugManager.ConsoleLog($"Recieved ack for: {pickupHash} {confirm}");
                 if (PickUp.HashExists(pickupHash))
                 {
                     PickUp.SetHashBool(pickupHash, confirm);
