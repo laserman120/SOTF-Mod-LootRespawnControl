@@ -15,6 +15,7 @@ This mod allows you to control the respawning of loot in Sons of the Forest. You
     * If enabled, overrides individual "use timer" options and allows all loot to respawn after a set number of in-game days.
 * **"Time in Days" (Default: 7)**
     * Sets the number of in-game days required for loot to respawn when the "Should all loot be allowed to respawn after X days?" or individual group timers are enabled.
+    * See the "Good to know" section for more detail on respawning.
 
 ## Loot Groups
 
@@ -196,6 +197,13 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 
 ## Good to Know / Important Interactions
 
+* **Loot Respawning:**
+    * Loot respawning after a certain time has passen is still tied to the original respawn logic, for loot to respawn a reload of the save is required.
+       * **NOT YET IMPLEMENTED (IN TESTING):** When loot is set to respawn after a certain time has passed it will do so once all conditions are met:
+          * The player has collected the loot and it is set to respawn after x days.
+          * The player has left the proximity of the loot pickup.
+          * The player returns after the required time has passed.
+       * Once all conditions are met the loot pickup will respawn at the place at which it was previously collected.
 * **Enforcing Configuration in Multiplayer:**
     * You can enforce your configuration on other players in multiplayer by enabling "Should pickups be synced across players?" while disabling all individual "Sync [Group]" options. This will force clients to use the host's configuration without synchronizing individual loot pickups.
 * **Respawning with Timers in Multiplayer:**
