@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Bolt;
 using LootRespawnControl.Managers;
+using LootRespawnControl.Networking;
 using RedLoader;
 using RedLoader.Utils;
 using Sons.Multiplayer;
@@ -49,6 +50,8 @@ namespace LootRespawnControl
         public static PickupEventHandler _pickupEvent;
         public static PickupEventRequest _pickupRequest;
         public static PickupEventAck _pickupAck;
+        public static RespawnEvent.RespawnEventHandler _respawnEvent;
+        public static RespawnEvent.RespawnEventRequest _respawnRequest;
 
         public static void RegisterPackets()
         {
@@ -60,6 +63,8 @@ namespace LootRespawnControl
             _pickupEvent = new PickupEventHandler();
             _pickupRequest = new PickupEventRequest();
             _pickupAck = new PickupEventAck();
+            _respawnEvent = new RespawnEvent.RespawnEventHandler();
+            _respawnRequest = new RespawnEvent.RespawnEventRequest();
             Packets.Register(_configDataEvent);
             Packets.Register(_configDataAck);
             Packets.Register(_configSyncConfirmationEvent);
@@ -68,6 +73,8 @@ namespace LootRespawnControl
             Packets.Register(_pickupEvent);
             Packets.Register(_pickupRequest);
             Packets.Register(_pickupAck);
+            Packets.Register(_respawnEvent);
+            Packets.Register(_respawnRequest);
         }
 
         public static void SendConfigData(BoltConnection connection)
@@ -115,6 +122,16 @@ namespace LootRespawnControl
         public static void SendPickupAck(string pickupHash, bool confirm, BoltConnection target)
         {
             _pickupAck.Send(pickupHash, confirm, target);
+        }
+
+        public static void SendRespawnEvent(string pickupHash)
+        {
+            _respawnEvent.Send(pickupHash);
+        }
+
+        public static void SendRespawnRequest(string pickupName, string pickupHash, int id, bool isBreakable)
+        {
+            _respawnRequest.Send(pickupName, pickupHash, id, isBreakable);
         }
 
         public static void Update()

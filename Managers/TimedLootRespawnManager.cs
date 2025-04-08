@@ -17,6 +17,7 @@ namespace LootRespawnControl.Managers
     {
         public static GameObject LootRespawnManager;
         public static RespawnDataHolderManager RespawnDataHolderManager;
+        public static List<RespawnDataHolder> RespawnDataHoldersAwaitingRespawn;
 
         public static void IntitializeManager()
         {
@@ -116,6 +117,15 @@ namespace LootRespawnControl.Managers
             lootIdentifier.enforceIdentifier = true;
             respawnedTarget.SetActive(true);
         }
+
+
+        public static void CheckForRespawn()
+        {
+            foreach(var dataHolder in RespawnDataHoldersAwaitingRespawn)
+            {
+                dataHolder.CheckForRespawn();
+            }
+        }
     }
 }
 
@@ -145,6 +155,11 @@ public class RespawnDataHolder : MonoBehaviour
     {
         if (other.name != "LocalPlayer") return;
 
+        CheckForRespawn();
+    }
+
+    public void CheckForRespawn()
+    {
         if (BoltNetwork.isRunning)
         {
             //We are on a server
@@ -153,20 +168,27 @@ public class RespawnDataHolder : MonoBehaviour
                 //We are the host
                 //Directly send message to all clients to remove from collected
                 TryRespawn();
-                //Send HERE
+                NetworkManager.SendRespawnEvent(identifier);
                 return;
-            } else if (BoltNetwork.isClient)
+            }
+            else if (BoltNetwork.isClient)
             {
                 //We are a client
                 if (!LootManager.LootRespawnManager.IsLootCollected(identifier))
                 {
-                    //Directly attempt respawning when it no longer is in the list
+                    //Directly attempt respawning when the hash is no longer in the list
                     TryRespawn();
+                    if (TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Contains(this))
+                    {
+                        TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Remove(this);
+                    }
                     return;
                 }
 
                 //Send network request to verify if we should respawn
-
+                //Add us to the list of respawn data holders awaiting respawn
+                TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Add(this);
+                NetworkManager.SendRespawnRequest(lootName, identifier, id, isBreakable);
                 return;
             }
         }
