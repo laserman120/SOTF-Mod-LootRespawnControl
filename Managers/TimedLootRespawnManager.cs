@@ -18,6 +18,7 @@ namespace LootRespawnControl.Managers
         public static GameObject LootRespawnManager;
         public static RespawnDataHolderManager RespawnDataHolderManager;
         public static List<RespawnDataHolder> RespawnDataHoldersAwaitingRespawn;
+        public static float RespawnCheckRange = 50f;
 
         public static void IntitializeManager()
         {
@@ -142,7 +143,7 @@ public class RespawnDataHolder : MonoBehaviour
     public GameObject _respawnTarget;
     public GameObject _originalTarget;
 
-    private float triggerRadius = 5f;
+    private float triggerRadius = TimedLootRespawnManager.RespawnCheckRange;
 
     private void Start()
     {
