@@ -43,32 +43,50 @@ namespace LootRespawnControl.Managers
 
         [DebugCommand("lrcresetcollected")]
         private void LRCResetCollected()
-        {
+        { 
+             DebugManager.ConsoleLog("Running debug command  LRCResetCollected...");
+            if (BoltNetwork.isRunning && BoltNetwork.isServer && ConfigManager.enableMultiplayer) //Bolt running and is host and multiplayer enabled
+            {
+                SonsTools.ShowMessage("Loot Respawn Control: Collected loot has been reset... WARNING!!! You are in multiplayer!!! This session is now desynced until all clients exit and rejoin!");
+                DebugManager.ConsoleLog($"Collected loot reset while user is in Multiplayer!!!");
+                
+                LootRespawnManager.collectedLootIds = new HashSet<LootData>();
+                return;
+            }
+            else if (BoltNetwork.isRunning && ConfigManager.enableMultiplayer){
+                SonsTools.ShowMessage("Loot Respawn Control: You are NOT the host, loot reset has been denied!");
+                DebugManager.ConsoleLog($User attempted to reset collected loot as client! Action was denied");
+                return;
+            }
+
+            SonsTools.ShowMessage("Loot Respawn Control: Collected loot has been reset...");
+            DebugManager.ConsoleLog($"User is in singleplayer... resetting collected loot");
             LootRespawnManager.collectedLootIds = new HashSet<LootData>();
-            SonsTools.ShowMessage("Loot Respawn Control: All picked up loot has been reset. Save your game and reload");
         }
 
 
         [DebugCommand("lrcforcereloadconfig")]
         private void LRCForceReloadConfig()
         {
-            if (BoltNetwork.isRunning && BoltNetwork.isServer)
+            DebugManager.ConsoleLog("Running debug command LRCForceReloadConfig...");
+            if (BoltNetwork.isRunning && BoltNetwork.isServer) //Bolt running and is host
             {
-                if (Config.ConsoleLogging.Value)
-                {
-                    SonsTools.ShowMessage("Loot Respawn Control: WARNING! You are in multiplayer! Without a reload desyncs can occur!");
-                    DebugManager.ConsoleLog($"Force reloaded Config While user is in Multiplayer!!!");
-                }
+                SonsTools.ShowMessage("Loot Respawn Control: WARNING!!! You are in multiplayer!!! This session is now desynced until all clients exit and rejoin!");
+                DebugManager.ConsoleLog($"Force reloaded config while user is in Multiplayer!!!");
+                
                 ConfigManager.SetLocalConfigValues();
+                return;
             }
-            else if (!BoltNetwork.isRunning)
-            {
-                DebugManager.ConsoleLog($"User is in singleplayer... setting local config values");
-                ConfigManager.SetLocalConfigValues();
-                ConfigManager.SetMultiplayerConfigValue(false);
+            else if (BoltNetwork.isRunning && ConfigManager.enableMultiplayer){
+                SonsTools.ShowMessage("Loot Respawn Control: You are NOT the host, the config was NOT reloaded!");
+                DebugManager.ConsoleLog($User attempted to force reload as client! Reload denied");
+                return;
             }
 
             SonsTools.ShowMessage("Loot Respawn Control: Force reloaded local config values...");
+            DebugManager.ConsoleLog($"User is in singleplayer... setting local config values");
+            ConfigManager.SetLocalConfigValues();
+            ConfigManager.SetMultiplayerConfigValue(false);
         }
     }
 }
