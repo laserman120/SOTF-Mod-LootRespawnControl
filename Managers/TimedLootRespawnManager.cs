@@ -185,11 +185,15 @@ public class RespawnDataHolder : MonoBehaviour
                     }
                     return;
                 }
-
+                //if it is not yet included in the awaiting list
                 //Send network request to verify if we should respawn
                 //Add us to the list of respawn data holders awaiting respawn
-                TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Add(this);
-                NetworkManager.SendRespawnRequest(lootName, identifier, id, isBreakable);
+                if (!TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Contains(this))
+                {
+                    TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Add(this);
+                    NetworkManager.SendRespawnRequest(lootName, identifier, id, isBreakable);
+                }
+                
                 return;
             }
         }
