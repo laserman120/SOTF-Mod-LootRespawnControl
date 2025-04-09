@@ -224,6 +224,19 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 * **Bug Reporting:** If you encounter a bug or unexpected issue, enable logging, reproduce the issue, and include the log file with your bug report. For networking issues like desyncs, both the host and client should provide log files.
 * **Log File Location:** `Sons Of The Forest\_Redloader\Latest.log`
 
+## Debug Commands
+
+* **Important:** Debug commands are used for specific debugging purposes, while using them in an offline game has no risk, it might cause undesired effects, bugs or issues.
+* **Multiplayer:** Debug commands should be **avoided** while in a multiplayer session with networking enabled. A host is allowed to perform debug commands, which can lead to desync between users and major bugs.
+
+* **Commands:**
+   * **LRCResetCollected** - This command will reset all loot that has been marked as collected. 
+      * After a reload all loot will respawn.
+      * Any loot that is set to respawn after some time will immediately respawn.
+   * **LRCForceReloadConfig** - This command will enforce a config reload, applying any changes made to the config since the world was loaded.
+      * In a multiplayer session this will certainly lead to desynchronisation between users, as the client and host config no longer match.
+      * Can be used to test the behavior of certain config options without reloading a world each time.
+
 ## Special Thanks
 
 * **TheSuperSnooper:** For helping me test and debug the mod as well as tons of feedback
