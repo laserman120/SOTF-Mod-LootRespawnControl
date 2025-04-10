@@ -212,14 +212,15 @@ public class LootRespawnControl : SonsMod
         NetworkManager.RegisterPackets();
         _modVersion = Manifest.Version;
 
+        SettingsRegistry.CreateSettings(this, null, typeof(Config));
+        var saveManager = new LootRespawnSaveManager();
+        SonsSaveTools.Register(saveManager);
+
         SdkEvents.OnWorldExited.Subscribe(OnWorldExitedCallback);
     }
 
     protected override void OnSdkInitialized()
     {
-        SettingsRegistry.CreateSettings(this, null, typeof(Config));
-        var saveManager = new LootRespawnSaveManager();
-        SonsSaveTools.Register(saveManager);
     }
 
     protected override void OnGameStart()

@@ -65,6 +65,9 @@ namespace LootRespawnControl
         public static string removeList{ get; private set; } = "";
         public static string networkList{ get; private set; } = "";
 
+
+        public static string currentlySetConfig { get; set; } = "";
+
         public static bool ShouldIdBeRemoved(int ItemId)
         {
             bool result = false;
@@ -203,6 +206,9 @@ namespace LootRespawnControl
             LootRespawnControl.CustomWhitelistTimed = LootRespawnControl.ExtractIds(allowListTimed);
             LootRespawnControl.CustomBlacklist = LootRespawnControl.ExtractIds(removeList);
             LootRespawnControl.CustomNetworkingList = LootRespawnControl.ExtractIds(networkList);
+
+            //store the serialized config values
+            currentlySetConfig = Config.Serialize();
         }
 
         public static void SetMultiplayerConfigValue(bool value)

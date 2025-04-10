@@ -55,7 +55,7 @@ namespace LootRespawnControl.Managers
             }
             else if (BoltNetwork.isRunning && ConfigManager.enableMultiplayer){
                 SonsTools.ShowMessage("Loot Respawn Control: You are NOT the host, loot reset has been denied!");
-                DebugManager.ConsoleLog($User attempted to reset collected loot as client! Action was denied");
+                DebugManager.ConsoleLog("$User attempted to reset collected loot as client! Action was denied");
                 return;
             }
 
@@ -79,7 +79,7 @@ namespace LootRespawnControl.Managers
             }
             else if (BoltNetwork.isRunning && ConfigManager.enableMultiplayer){
                 SonsTools.ShowMessage("Loot Respawn Control: You are NOT the host, the config was NOT reloaded!");
-                DebugManager.ConsoleLog($User attempted to force reload as client! Reload denied");
+                DebugManager.ConsoleLog("$User attempted to force reload as client! Reload denied");
                 return;
             }
 

@@ -192,6 +192,7 @@ public class RespawnDataHolder : MonoBehaviour
                 {
                     TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Add(this);
                     NetworkManager.SendRespawnRequest(lootName, identifier, id, isBreakable);
+                    DebugManager.ConsoleLog($"Requesting loot respawn for {lootName} {identifier}");
                 }
                 
                 return;

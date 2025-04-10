@@ -79,7 +79,7 @@ namespace LootRespawnControl
 
         public static void SendConfigData(BoltConnection connection)
         {
-            _configDataEvent.Send(Config.Serialize(), connection);
+            _configDataEvent.Send(ConfigManager.currentlySetConfig, connection);
             _configSyncConfirmationEvent.StartTimer(connection);
         }
 
