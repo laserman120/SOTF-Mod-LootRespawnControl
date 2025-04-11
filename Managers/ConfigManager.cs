@@ -102,6 +102,7 @@ namespace LootRespawnControl
             if (LootRespawnControl.ItemIdsThrowables.Contains(ItemId) && allowThrowablesTimed) { result = true; }
             if (LootRespawnControl.ItemIdsMedicineAndEnergy.Contains(ItemId) && allowMedsTimed) { result = true; }
             if (LootRespawnControl.ItemIdsPlants.Contains(ItemId) && allowPlantsTimed) { result = true; }
+            if (LootRespawnControl._breakableId == ItemId && allowBreakablesTimed) { result = true; }
 
             //Allow timed spawn of specific item if timed whitelist includes it
             if (LootRespawnControl.CustomWhitelistTimed.Contains(ItemId)) { result = true; }
@@ -149,6 +150,7 @@ namespace LootRespawnControl
             if (LootRespawnControl.ItemIdsThrowables.Contains(ItemId) && enableNetworkingThrowables) { result = true; }
             if (LootRespawnControl.ItemIdsMedicineAndEnergy.Contains(ItemId) && enableNetworkingMeds) { result = true; }
             if (LootRespawnControl.ItemIdsPlants.Contains(ItemId) && enableNetworkingPlants) { result = true; }
+            if (LootRespawnControl._breakableId == ItemId && !enableNetworkingBreakables) { result = true; }
 
             //Check for custom list
             if (LootRespawnControl.CustomNetworkingList.Contains(ItemId)) { result = true; }
