@@ -74,23 +74,29 @@ namespace LootRespawnControl.Networking
             {
                 // Implement your logic here for handling the received pickup data
                 DebugManager.ConsoleLog($"Received respawn request for: {pickupName} {identifier}");
-
                 bool result = false;
-                if (isBreakable)
+                if(LootManager.LootRespawnManager.IsLootCollected(identifier))
                 {
-                    if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.allowBreakablesTimed && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                    if (isBreakable)
                     {
-                        result = true;
+                        if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.allowBreakablesTimed && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                        {
+                            result = true;
+                        }
                     }
-                }
-                else
+                    else
+                    {
+                        if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(id) && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                        {
+                            result = true;
+                        }
+                    }
+                } 
+                else 
                 {
-                    if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(id) && LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
-                    {
-                        result = true;
-                    }
+                    //If we can no longer find the hash in our collected we trust the client and send the respawn event
+                    result = true;
                 }
-
                 if (result)
                 {
                     LootManager.LootRespawnManager.RemoveLootFromCollected(identifier);
