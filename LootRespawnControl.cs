@@ -266,6 +266,11 @@ public class LootRespawnControl : SonsMod
 
     public static void HandlePickupDataRecieved(string objectName, string identifier, int pickupId, long timestamp)
     {
+        if(LootManager.LootRespawnManager.IsLootCollected(identifier))
+        {
+            //Already collected, return...
+            return;
+        }
         if(objectName != null && pickupId != _breakableId)
         {
             GameObject pickupObject = GameObject.Find(objectName);
