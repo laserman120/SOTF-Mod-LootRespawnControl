@@ -77,6 +77,12 @@ namespace LootRespawnControl
             Packets.Register(_respawnRequest);
         }
 
+        public static void ResetJoinData()
+        {
+            PlayerJoin.ConfigDataEvent.receivedConfigData = "";
+            PlayerJoin.LootDataEvent.receivedLootData = "";
+        }
+
         public static void SendConfigData(BoltConnection connection)
         {
             _configDataEvent.Send(ConfigManager.currentlySetConfig, connection);

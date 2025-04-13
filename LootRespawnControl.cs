@@ -226,6 +226,8 @@ public class LootRespawnControl : SonsMod
 
     protected override void OnGameStart()
     {
+
+        GameCommands.RegisterFromType(typeof(DebugManager));
         // This is called once the player spawns in the world and gains control.
         if (BoltNetwork.isServerOrNotRunning)
         {
@@ -233,18 +235,13 @@ public class LootRespawnControl : SonsMod
             EventHandler.Create();
 
             //initialize the respawnManager
-            DebugManager.ConsoleLog("User in Singleplayer or Hosting!");
-            GameCommands.RegisterFromType(typeof(DebugManager));
-            return;
+            DebugManager.ConsoleLog("User in Singleplayer or Hosting! Created EventHandler");
         }
 
         if (!DoubleCheckedCollectedLoot)
         {
             HandleStartupLootData(null);
         }
-
-
-        GameCommands.RegisterFromType(typeof(DebugManager));
     }
 
     protected override void OnSonsSceneInitialized(ESonsScene sonsScene)
@@ -262,6 +259,8 @@ public class LootRespawnControl : SonsMod
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         DoubleCheckedCollectedLoot = false;
         recievedConfigData = false;
+        //Reset any data that was sent in case it was interrupted
+        NetworkManager.ResetJoinData();
         DebugManager.ConsoleLog("Exited World, Reset Values");
     }
 

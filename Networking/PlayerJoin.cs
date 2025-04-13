@@ -88,7 +88,7 @@ namespace LootRespawnControl.Networking
 
             private void KickPlayer(BoltConnection connection)
             {
-                connection.Disconnect(new CoopKickToken { Banned = true, KickMessage = "HOST_KICKED_YOU" }.Cast<IProtocolToken>());
+                connection.Disconnect(new CoopKickToken { Banned = false, KickMessage = "HOST_KICKED_YOU" }.Cast<IProtocolToken>());
             }
         }
 
@@ -100,7 +100,7 @@ namespace LootRespawnControl.Networking
             private const int CHUNK_SIZE = 1024; // * 2 due to UTF 16 therefore 2048
             private const string COMPLETE_MARKER = "COMPLETE";
 
-            private string receivedConfigData = "";
+            public static string receivedConfigData = "";
 
             public void Send(string configData, BoltConnection connection)
             {
@@ -155,8 +155,8 @@ namespace LootRespawnControl.Networking
             private void HandleReceivedConfigData(string configData, BoltConnection target)
             {
                 //HANDLE DATA
-                ConfigManager.DeserializeConfig(configData);
                 DebugManager.ConsoleLog("Finished receiving Config Data  " + configData);
+                ConfigManager.DeserializeConfig(configData);
                 LootRespawnControl.recievedConfigData = true;
                 NetworkManager.SendConfigSyncConfirmation(LootRespawnControl._modVersion, MultiplayerUtilities.GetSteamId(target));
             }
@@ -211,31 +211,6 @@ namespace LootRespawnControl.Networking
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         internal class LootDataEvent : Packets.NetEvent
         {
             public override string Id => "LootSync_LootDataEvent";
@@ -243,7 +218,7 @@ namespace LootRespawnControl.Networking
             private const int CHUNK_SIZE = 1024; // * 2 due to UTF 16 therefore 2048
             private const string COMPLETE_MARKER = "COMPLETE";
 
-            private string receivedLootData = "";
+            public static string receivedLootData = "";
 
             public void SendChunkedLootData(HashSet<LootData> lootData, BoltConnection connection)
             {

@@ -74,13 +74,16 @@ namespace LootRespawnControl.Harmony
                     DebugManager.ConsoleLog($"Removed from collected due to time: {__instance.name}");
                     return;
                 }
-                DebugManager.ConsoleLog($"Destroying: {__instance.name}");
                 //Create holder for respawning...
                 if(ConfigManager.IsGlobalTimerEnabled() || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId))
                 {
                     TimedLootRespawnManager.CreateRespawnDataHolder(__instance._destroyTarget, identifierComponent, __instance._itemId);
+                    UnityEngine.Object.Destroy(__instance._destroyTarget);
+                    DebugManager.ConsoleLog($"Destroyed Pickup and created respawn holder: {__instance.name}");
+                    return;
                 }
                 //Destroy the pickup
+                DebugManager.ConsoleLog($"Destroying: {__instance.name}");
                 UnityEngine.Object.Destroy(__instance._destroyTarget);
             }
         }

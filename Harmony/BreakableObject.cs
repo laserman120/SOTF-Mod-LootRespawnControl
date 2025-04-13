@@ -42,13 +42,16 @@ namespace LootRespawnControl.Harmony
                         return;
                     }
 
-                    DebugManager.ConsoleLog($"Destroying: {__instance.name}");
+                    
 
                     if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.allowBreakablesTimed)
                     {
                         TimedLootRespawnManager.CreateRespawnDataHolder(__instance.transform.gameObject, identifierComponent, LootRespawnControl._breakableId);
+                        UnityEngine.Object.Destroy(__instance.transform.gameObject);
+                        DebugManager.ConsoleLog($"Destroyed breakable and created respawn holder: {__instance.name}");
+                        return;
                     }
-
+                    DebugManager.ConsoleLog($"Destroying: {__instance.name}");
                     UnityEngine.Object.Destroy(__instance.transform.gameObject);
                 }
             }

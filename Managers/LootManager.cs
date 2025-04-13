@@ -55,7 +55,6 @@ namespace LootRespawnControl
                 }
             }
 
-
             public static byte[] Vector3ToBytes(Vector3 vector)
             {
                 byte[] bytes = new byte[12]; // 3 floats * 4 bytes

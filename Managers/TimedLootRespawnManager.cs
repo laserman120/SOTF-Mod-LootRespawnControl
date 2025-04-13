@@ -279,12 +279,13 @@ public class RespawnDataHolder : MonoBehaviour
 
     private void RespawnPickup()
     {
-        //respawn the item
-        TimedLootRespawnManager.RespawnItem(this);
         //remove the loot from the respawn manager
         LootManager.LootRespawnManager.RemoveLootFromCollected(identifier);
         //remove the loot from the respawn data holder manager
         RespawnDataHolderManager.RemoveLootFromRespawnManagerList(gameObject);
+        //respawn the item
+        TimedLootRespawnManager.RespawnItem(this);
+        
         //destroy the data holder
 
         DebugManager.ConsoleLog($"Respawned: {lootName}...");
@@ -293,12 +294,14 @@ public class RespawnDataHolder : MonoBehaviour
 
     private void RespawnBreakable()
     {
-        //respawn the item
-        TimedLootRespawnManager.RespawnBreakable(this);
         //remove the loot from the respawn manager
         LootManager.LootRespawnManager.RemoveLootFromCollected(identifier);
         //remove the loot from the respawn data holder manager
         RespawnDataHolderManager.RemoveLootFromRespawnManagerList(gameObject);
+        //respawn the item
+        TimedLootRespawnManager.RespawnBreakable(this);
+
+
         //destroy the data holder
 
         DebugManager.ConsoleLog($"Respawned: {lootName}...");
@@ -355,7 +358,9 @@ public class RespawnDataHolderManager : MonoBehaviour
 
     public static void ForceRespawnAll()
     {
-        foreach(var loot in ActiveRespawnDataHolders)
+        List<RespawnDataHolder> respawnCandidates = ActiveRespawnDataHolders.ToList();
+
+        foreach (var loot in respawnCandidates)
         {
             loot.ForceRespawn();
         }
