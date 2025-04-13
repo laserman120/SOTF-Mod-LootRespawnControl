@@ -99,6 +99,10 @@ namespace LootRespawnControl
 
             public static void LoadCollectedLoot(string jsonData)
             {
+
+                //Initialize the loot respawn manager
+                TimedLootRespawnManager.IntitializeManager();
+
                 if (jsonData == null)
                 {
                     LootRespawnManager.collectedLootIds = new HashSet<LootData>();
@@ -155,9 +159,6 @@ namespace LootRespawnControl
                     //Reset recieved data
                     recievedLootIds = new HashSet<LootData>();
                 }
-
-                //Initialize the loot respawn manager
-                TimedLootRespawnManager.IntitializeManager();
 
                 //Double check any loaded objects that were created before loading has occured
                 Harmony.PickUp.PickupsPendingCheck.ForEach(PickUp =>
