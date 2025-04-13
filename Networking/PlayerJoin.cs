@@ -70,6 +70,10 @@ namespace LootRespawnControl.Networking
                 {
                     DebugManager.ConsoleLog($"Kicked connecting player due to timeout! " + connectionId);
                     
+                    if(MultiplayerUtilities.GetConnectionFromSteamId(connectionId) == null) 
+                    {
+                        connectionTimers.Remove(connectionId);
+                    }
                     KickPlayer(MultiplayerUtilities.GetConnectionFromSteamId(connectionId));
                     connectionTimers.Remove(connectionId);
                 }

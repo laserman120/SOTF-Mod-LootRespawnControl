@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using static LootRespawnControl.LootManager.LootRespawnManager;
+using static SonsSdk.ItemTools;
 
 namespace LootRespawnControl
 {
@@ -76,8 +77,24 @@ namespace LootRespawnControl
 
             public static string SaveCollectedLoot()
             {
+                performCleanupBeforeSave();
                 var serializableSet = new SerializableHashSet<LootData>(LootRespawnManager.collectedLootIds);
                 return JsonConvert.SerializeObject(serializableSet);
+            }
+
+            public static void performCleanupBeforeSave()
+            {
+                foreach (LootData lootData in LootRespawnManager.collectedLootIds)
+                {
+                    if (ConfigManager.ShouldIdBeRemovedTimed(lootData.Id) || ConfigManager.useTimerGlobal)
+                    {
+                        if (LootRespawnControl.HasEnoughTimePassed(lootData.Hash, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
+                        {
+                            DebugManager.ConsoleLog($"Removing loot item with ID {lootData.Id} and Hash {lootData.Hash} due to time passed.");
+                            LootRespawnManager.collectedLootIds.Remove(lootData);
+                        }
+                    }
+                }
             }
 
             public static void LoadCollectedLoot(string jsonData)

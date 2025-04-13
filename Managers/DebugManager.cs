@@ -88,5 +88,29 @@ namespace LootRespawnControl.Managers
             ConfigManager.SetLocalConfigValues();
             ConfigManager.SetMultiplayerConfigValue(false);
         }
+
+        [DebugCommand("lrcforcerespawnloot")]
+        private void LRCForceRespawnLoot()
+        {
+            DebugManager.ConsoleLog("Running debug command LRCForceRespawnLoot...");
+            if (BoltNetwork.isRunning && BoltNetwork.isServer) //Bolt running and is host
+            {
+                SonsTools.ShowMessage("Loot Respawn Control: WARNING!!! You are in multiplayer!!! This session is now desynced until all clients exit and rejoin!");
+                DebugManager.ConsoleLog($"Force respawned all loot while user is in Multiplayer!!!");
+
+                TimedLootRespawnManager.ForceRespawnAll();
+                return;
+            }
+            else if (BoltNetwork.isRunning && ConfigManager.enableMultiplayer)
+            {
+                SonsTools.ShowMessage("Loot Respawn Control: You are NOT the host, loot respawn has been denied!");
+                DebugManager.ConsoleLog("$User attempted to force respawn loot as client! Action denied");
+                return;
+            }
+
+            SonsTools.ShowMessage("Loot Respawn Control: Force respawned all loot...");
+            DebugManager.ConsoleLog($"User is in singleplayer... force respawned loot...");
+            TimedLootRespawnManager.ForceRespawnAll();
+        }
     }
 }

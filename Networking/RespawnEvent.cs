@@ -52,7 +52,7 @@ namespace LootRespawnControl.Networking
 
         internal class RespawnEventRequest : Packets.NetEvent
         {
-            public override string Id => "LootSync_PickupEventRequest";
+            public override string Id => "LootSync_RespawnEventRequest";
 
             //Send the initial loot package
             public void Send(string pickupName, string pickupHash, int id, bool isBreakable, GlobalTargets target = GlobalTargets.OnlyServer)

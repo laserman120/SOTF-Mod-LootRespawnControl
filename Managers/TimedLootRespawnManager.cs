@@ -17,7 +17,7 @@ namespace LootRespawnControl.Managers
     {
         public static GameObject LootRespawnManager;
         public static RespawnDataHolderManager RespawnDataHolderManager;
-        public static List<RespawnDataHolder> RespawnDataHoldersAwaitingRespawn;
+        public static List<RespawnDataHolder> RespawnDataHoldersAwaitingRespawn = new List<RespawnDataHolder>();
         public static float RespawnCheckRange = 50f;
 
         public static void IntitializeManager()
@@ -78,6 +78,7 @@ namespace LootRespawnControl.Managers
             lootIdentifier.Identifier = dataHolder.identifier;
             lootIdentifier.enforceIdentifier = true;
             respawnedTarget.SetActive(true);
+            DebugManager.ConsoleLog($"Respawned loot: {dataHolder.lootName}...");
         }
 
         public static void RespawnBreakable(RespawnDataHolder dataHolder)
@@ -117,15 +118,28 @@ namespace LootRespawnControl.Managers
             lootIdentifier.Identifier = dataHolder.identifier;
             lootIdentifier.enforceIdentifier = true;
             respawnedTarget.SetActive(true);
+            DebugManager.ConsoleLog($"Respawned breakable object: {dataHolder.lootName}...");
         }
 
 
         public static void CheckForRespawn()
         {
-            foreach(var dataHolder in RespawnDataHoldersAwaitingRespawn)
+            List<RespawnDataHolder> respawnCandidates = RespawnDataHoldersAwaitingRespawn.ToList();
+
+            foreach (var dataHolder in respawnCandidates)
             {
                 dataHolder.CheckForRespawn();
             }
+        }
+
+        public static void ForceRespawnAll()
+        {
+            RespawnDataHolderManager.ForceRespawnAll();
+        }
+
+        public static void SetLootRespawnDistance(float distance)
+        {
+            RespawnDataHolderManager.SetLootRespawnDistance(distance);
         }
     }
 }
@@ -142,12 +156,13 @@ public class RespawnDataHolder : MonoBehaviour
     public bool isBreakable;
     public GameObject _respawnTarget;
     public GameObject _originalTarget;
+    SphereCollider triggerCollider;
 
     private float triggerRadius = TimedLootRespawnManager.RespawnCheckRange;
 
     private void Start()
     {
-        SphereCollider triggerCollider = gameObject.AddComponent<SphereCollider>();
+        triggerCollider = gameObject.AddComponent<SphereCollider>();
         triggerCollider.isTrigger = true;
         triggerCollider.radius = triggerRadius;
     }
@@ -161,6 +176,8 @@ public class RespawnDataHolder : MonoBehaviour
 
     public void CheckForRespawn()
     {
+        if(!CanBeRespawned()) return;
+
         if (BoltNetwork.isRunning)
         {
             //We are on a server
@@ -203,21 +220,60 @@ public class RespawnDataHolder : MonoBehaviour
         TryRespawn();
     }
 
-    private void TryRespawn()
+    private bool CanBeRespawned()
     {
+        if (!LootManager.LootRespawnManager.IsLootCollected(identifier))
+        {
+            return true;
+        }
         if (isBreakable)
         {
             if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.allowBreakablesTimed && LootRespawnControl.LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
             {
-                RespawnBreakable();
+                return true;
             }
         }
         else
         {
             if (ConfigManager.IsGlobalTimerEnabled() && LootRespawnControl.LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())) || ConfigManager.ShouldIdBeRemovedTimed(id) && LootRespawnControl.LootRespawnControl.HasEnoughTimePassed(identifier, LootRespawnControl.LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString())))
             {
-                RespawnPickup();
+                return true;
             }
+        }
+        return false;
+    }
+
+    private void TryRespawn()
+    {
+        if (!CanBeRespawned()) return;
+        if (TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Contains(this))
+        {
+            TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Remove(this);
+        }
+        if (isBreakable)
+        {
+            RespawnBreakable();
+        }
+        else
+        {
+
+            RespawnPickup();
+        }
+    }
+
+    public void ForceRespawn()
+    {
+        if (TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Contains(this))
+        {
+            TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Remove(this);
+        }
+        if (isBreakable)
+        {
+            RespawnBreakable();
+        }
+        else
+        {
+            RespawnPickup();
         }
     }
 
@@ -249,19 +305,28 @@ public class RespawnDataHolder : MonoBehaviour
         Destroy(gameObject);
     }
 
-
+    public void setTriggerRadius(float radius)
+    {
+        triggerRadius = radius;
+        triggerCollider.radius = triggerRadius;
+    }
 }
 
 [RegisterTypeInIl2Cpp]
 public class RespawnDataHolderManager : MonoBehaviour
 {
     public static List<GameObject> LootRespawnManagerList = new List<GameObject>();
+    public static List<RespawnDataHolder> ActiveRespawnDataHolders = new List<RespawnDataHolder>();
     public static List<string> LootRespawnControlList = new List<string>();
 
     public static void AddLootToRespawnManagerList(GameObject loot)
     {
         LootRespawnManagerList.Add(loot);
         LootRespawnControlList.Add(loot.name);
+        if (loot.GetComponent<RespawnDataHolder>() != null)
+        {
+            ActiveRespawnDataHolders.Add(loot.GetComponent<RespawnDataHolder>());
+        }
 
     }
 
@@ -271,11 +336,28 @@ public class RespawnDataHolderManager : MonoBehaviour
         {
             LootRespawnManagerList.Remove(loot);
             LootRespawnControlList.Remove(loot.name);
+            ActiveRespawnDataHolders.Remove(loot.GetComponent<RespawnDataHolder>());
         }
     }
 
     public static bool DoesLootAlreadyExist(string lootName)
     {
         return LootRespawnControlList.Contains(lootName);
+    }
+
+    public static void SetLootRespawnDistance(float distance)
+    {
+        foreach(var loot in ActiveRespawnDataHolders)
+        {
+            loot.setTriggerRadius(distance);
+        }
+    }
+
+    public static void ForceRespawnAll()
+    {
+        foreach(var loot in ActiveRespawnDataHolders)
+        {
+            loot.ForceRespawn();
+        }
     }
 }

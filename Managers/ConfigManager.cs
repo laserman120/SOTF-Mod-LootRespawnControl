@@ -150,7 +150,7 @@ namespace LootRespawnControl
             if (LootRespawnControl.ItemIdsThrowables.Contains(ItemId) && enableNetworkingThrowables) { result = true; }
             if (LootRespawnControl.ItemIdsMedicineAndEnergy.Contains(ItemId) && enableNetworkingMeds) { result = true; }
             if (LootRespawnControl.ItemIdsPlants.Contains(ItemId) && enableNetworkingPlants) { result = true; }
-            if (LootRespawnControl._breakableId == ItemId && !enableNetworkingBreakables) { result = true; }
+            if (LootRespawnControl._breakableId == ItemId && enableNetworkingBreakables) { result = true; }
 
             //Check for custom list
             if (LootRespawnControl.CustomNetworkingList.Contains(ItemId)) { result = true; }

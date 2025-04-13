@@ -212,7 +212,7 @@ public class LootRespawnControl : SonsMod
         NetworkManager.RegisterPackets();
         _modVersion = Manifest.Version;
 
-        SettingsRegistry.CreateSettings(this, null, typeof(Config));
+        
         var saveManager = new LootRespawnSaveManager();
         SonsSaveTools.Register(saveManager);
 
@@ -221,6 +221,7 @@ public class LootRespawnControl : SonsMod
 
     protected override void OnSdkInitialized()
     {
+        SettingsRegistry.CreateSettings(this, null, typeof(Config));
     }
 
     protected override void OnGameStart()
@@ -269,6 +270,7 @@ public class LootRespawnControl : SonsMod
         if(LootManager.LootRespawnManager.IsLootCollected(identifier))
         {
             //Already collected, return...
+            DebugManager.ConsoleLog($"Pickup already in collected... {objectName}");
             return;
         }
         if(objectName != null && pickupId != _breakableId)
@@ -392,7 +394,6 @@ public class LootRespawnSaveManager : ICustomSaveable<LootRespawnSaveManager.Loo
     public void Load(LootSaveData obj)
     {
         LootRespawnManager.LoadCollectedLoot(obj.collectedLootJson);
-
     }
 
     public class LootSaveData

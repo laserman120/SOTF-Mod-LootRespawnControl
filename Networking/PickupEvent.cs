@@ -35,7 +35,7 @@ namespace LootRespawnControl.Networking
             private void HandleNetworkedPickup(string pickupName, string pickupHash, int pickupId, long time)
             {
                 // Implement your logic here for handling the received pickup data
-                DebugManager.ConsoleLog($"Received Pickup: {pickupName}, It: {pickupId}, Hash: {pickupHash}, Time: {time}");
+                DebugManager.ConsoleLog($"Received Pickup: {pickupName}, Id: {pickupId}, Hash: {pickupHash}, Time: {time}");
 
                 //If the player has the pickup hash in the awaiting reply, as well as the bool set to true we do not need to handle the pickup data.
                 if (PickUp.HashExists(pickupHash) && PickUp.GetHashBool(pickupHash) == true) 
