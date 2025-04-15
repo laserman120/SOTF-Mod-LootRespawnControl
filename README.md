@@ -224,6 +224,7 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
 * **Purpose:** This option is for debugging and troubleshooting. It logs various events, including pickups, deletions, networking, conditions, and error handling.
 * **Performance:** Enabling logging can cause performance issues when using tools like Unity Explorer with the console enabled. It is recommended to keep logging disabled during normal gameplay.
 * **Bug Reporting:** If you encounter a bug or unexpected issue, enable logging, reproduce the issue, and include the log file with your bug report. For networking issues like desyncs, both the host and client should provide log files.
+* **Log entries created by LRC:** Each line created by Loot Respawn Control will begin with [LRC] to avoid confusion with other mods.
 * **Log File Location:** `Sons Of The Forest\_Redloader\Latest.log`
 
 ## Debug Commands
@@ -238,6 +239,9 @@ networkList = "358; 365; 634"  // Shotgun, Crossbow, Solar Panel
    * **LRCForceReloadConfig** - This command will enforce a config reload, applying any changes made to the config since the world was loaded.
       * In a multiplayer session this will certainly lead to desynchronisation between users, as the client and host config no longer match.
       * Can be used to test the behavior of certain config options without reloading a world each time.
+   * **LRCForceRespawnLoot** - **Not yet implemented in public release** This command force respawns all loot that is set to respawn after some time
+      * Unlike with normal despawn behaviour this command will also respawn loot near the player
+      * This will only respawn the loot for the user executing the command. To avoid desyncs only the host can use it.
 
 ## Special Thanks
 
