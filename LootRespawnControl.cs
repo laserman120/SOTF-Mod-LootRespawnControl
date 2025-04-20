@@ -341,7 +341,7 @@ public class LootIdentifier : MonoBehaviour
     public string Identifier { get; set; }
     public Vector3 Position { get; private set; }
     public Quaternion Rotation { get; private set; }
-    public string LootName { get; private set; }
+    public string LootName { get; set; }
 
     public bool enforceIdentifier = false;
 

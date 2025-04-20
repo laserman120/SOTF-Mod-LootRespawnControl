@@ -76,6 +76,7 @@ namespace LootRespawnControl.Managers
             //enforce identifier
             LootIdentifier lootIdentifier = respawnedTarget.GetComponentInChildren<LootIdentifier>();
             lootIdentifier.Identifier = dataHolder.identifier;
+            lootIdentifier.LootName = dataHolder.lootName;
             lootIdentifier.enforceIdentifier = true;
             respawnedTarget.SetActive(true);
             DebugManager.ConsoleLog($"Respawned loot: {dataHolder.lootName}...");
@@ -116,6 +117,7 @@ namespace LootRespawnControl.Managers
             //enforce identifier
             LootIdentifier lootIdentifier = respawnedTarget.GetComponentInChildren<LootIdentifier>();
             lootIdentifier.Identifier = dataHolder.identifier;
+            lootIdentifier.LootName = dataHolder.lootName;
             lootIdentifier.enforceIdentifier = true;
             respawnedTarget.SetActive(true);
             DebugManager.ConsoleLog($"Respawned breakable object: {dataHolder.lootName}...");
