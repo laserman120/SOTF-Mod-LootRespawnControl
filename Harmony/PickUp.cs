@@ -150,7 +150,7 @@ namespace LootRespawnControl.Harmony
                         TimedLootRespawnManager.CreateRespawnDataHolder(__instance._destroyTarget, identifierComponent, __instance._itemId);
                     }
 
-                    DebugManager.ConsoleLog($"Added: {__instance.name} with data: {__instance.transform.position.x:F4}-{__instance.transform.position.y:F4}-{__instance.transform.position.z:F4}-{__instance.transform.rotation.x:F4}-{__instance.transform.rotation.y:F4}-{__instance.transform.rotation.z:F4}-{__instance.transform.rotation.w:F4}-{__instance.transform.name.Substring(0, 3)}");
+                    DebugManager.ConsoleLog($"Added: {__instance.name}");
                     return true;
                 }
 
