@@ -19,7 +19,7 @@ namespace LootRespawnControl.Networking
         {
             public override string Id => "LootSync_RespawnEvent";
 
-            //Send the initial loot package
+            // Send the initial loot package
             public void Send(string pickupHash, GlobalTargets target = GlobalTargets.Everyone)
             {
                 // Calculate packet size

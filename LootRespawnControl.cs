@@ -197,8 +197,8 @@ public class LootRespawnControl : SonsMod
 
     public LootRespawnControl()
     {
-        HarmonyPatchAll = true;
-        OnUpdateCallback = OnUpdate;
+        this.HarmonyPatchAll = true;
+        this.OnUpdateCallback = OnUpdate;
     }
 
     protected override void OnInitializeMod()
@@ -210,9 +210,8 @@ public class LootRespawnControl : SonsMod
         CustomNetworkingList = ExtractIds(Config.networkList.Value);
 
         NetworkManager.RegisterPackets();
-        _modVersion = Manifest.Version;
+        _modVersion = this.Manifest.Version;
 
-        
         var saveManager = new LootRespawnSaveManager();
         SonsSaveTools.Register(saveManager);
 
@@ -228,14 +227,20 @@ public class LootRespawnControl : SonsMod
     {
 
         GameCommands.RegisterFromType(typeof(DebugManager));
+
         // This is called once the player spawns in the world and gains control.
         if (BoltNetwork.isServerOrNotRunning)
         {
-            //Initialize event handler
+            // Initialize event handler
             EventHandler.Create();
 
-            //initialize the respawnManager
+            // initialize the respawnManager
             DebugManager.ConsoleLog("User in Singleplayer or Hosting! Created EventHandler");
+        }
+
+        if (!TimedLootRespawnManager.LootRespawnManager)
+        {
+            TimedLootRespawnManager.IntitializeManager();
         }
 
         if (!DoubleCheckedCollectedLoot)
@@ -259,7 +264,7 @@ public class LootRespawnControl : SonsMod
         LootRespawnManager.collectedLootIds = new HashSet<LootData>();
         DoubleCheckedCollectedLoot = false;
         recievedConfigData = false;
-        //Reset any data that was sent in case it was interrupted
+        // Reset any data that was sent in case it was interrupted
         NetworkManager.ResetJoinData();
         DebugManager.ConsoleLog("Exited World, Reset Values");
     }
@@ -268,7 +273,7 @@ public class LootRespawnControl : SonsMod
     {
         if(LootManager.LootRespawnManager.IsLootCollected(identifier))
         {
-            //Already collected, return...
+            // Already collected, return...
             DebugManager.ConsoleLog($"Pickup already in collected... {objectName}");
             return;
         }

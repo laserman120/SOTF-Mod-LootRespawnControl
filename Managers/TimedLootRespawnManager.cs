@@ -31,12 +31,13 @@ namespace LootRespawnControl.Managers
 
         public static void CreateRespawnDataHolder(GameObject destroyTarget, LootIdentifier lootIdentifier, int id)
         {
-            //Check if it already exists
-            if(RespawnDataHolderManager.DoesLootAlreadyExist("DataHolder-" + lootIdentifier.Identifier)) { return; }
+            // Check if it already exists
+            if (RespawnDataHolderManager.DoesLootAlreadyExist("DataHolder-" + lootIdentifier.Identifier)) { return; }
 
             GameObject lootRespawnDataHolder = new GameObject("DataHolder-" + lootIdentifier.Identifier);
             lootRespawnDataHolder.transform.parent = LootRespawnManager.transform; // Set the parent to the LootRespawnManager
-            //Set the location to the location of the current target, ignore original position due to endnight being wunky funky in their spawning logic, ffs
+
+            // Set the location to the location of the current target, ignore original position due to endnight being wunky funky in their spawning logic, ffs
             lootRespawnDataHolder.transform.position = destroyTarget.transform.position;
             lootRespawnDataHolder.transform.rotation = destroyTarget.transform.rotation;
             lootRespawnDataHolder.layer = LayerMask.NameToLayer("Player"); // Set the layer to Player to avoid collision with other objects
@@ -56,24 +57,24 @@ namespace LootRespawnControl.Managers
             respawnTarget.transform.localPosition = Vector3.zero;
             dataHolder._respawnTarget = respawnTarget;
 
-            //if we have a breakable we keep a reference to the original object
-            if(id == LootRespawnControl._breakableId)
+            // if we have a breakable we keep a reference to the original object
+            if (id == LootRespawnControl._breakableId)
             {
                 dataHolder._originalTarget = destroyTarget;
             }
-            
+
             RespawnDataHolderManager.AddLootToRespawnManagerList(lootRespawnDataHolder);
         }
 
         public static void RespawnItem(RespawnDataHolder dataHolder)
         {
-            //setup loot
+            // setup loot
             GameObject respawnedTarget = GameObject.Instantiate(dataHolder._respawnTarget);
             respawnedTarget.transform.position = dataHolder.position;
             respawnedTarget.transform.rotation = dataHolder.rotation;
             respawnedTarget.name = dataHolder.lootName;
 
-            //enforce identifier
+            // enforce identifier
             LootIdentifier lootIdentifier = respawnedTarget.GetComponentInChildren<LootIdentifier>();
             lootIdentifier.Identifier = dataHolder.identifier;
             lootIdentifier.LootName = dataHolder.lootName;
@@ -84,13 +85,13 @@ namespace LootRespawnControl.Managers
 
         public static void RespawnBreakable(RespawnDataHolder dataHolder)
         {
-            //Remove original object if it still exists
+            // Remove original object if it still exists
             if(dataHolder._originalTarget != null)
             {
                 GameObject.Destroy(dataHolder._originalTarget);
             }
 
-            //setup loot
+            // setup loot
             GameObject respawnedTarget = GameObject.Instantiate(dataHolder._respawnTarget);
             respawnedTarget.transform.position = dataHolder.position;
             respawnedTarget.transform.rotation = dataHolder.rotation;
@@ -104,17 +105,17 @@ namespace LootRespawnControl.Managers
                 return;
             }
 
-            //Verify the original object is not destroyed
+            // Verify the original object is not destroyed
             breakableObjectComponent._originalObject?.SetActive(true);
             breakableObjectComponent._brokenShowObject?.SetActive(false);
 
             Sons.Weapon.DamageNode damageNode = respawnedTarget.GetComponentInChildren<Sons.Weapon.DamageNode>();
             Sons.Ai.VailCollisionTags vailCollisionTags = respawnedTarget.GetComponentInChildren<Sons.Ai.VailCollisionTags>();
 
-            if(damageNode != null) damageNode.enabled = true;
-            if(vailCollisionTags != null) vailCollisionTags.enabled = true;
+            if (damageNode != null) damageNode.enabled = true;
+            if (vailCollisionTags != null) vailCollisionTags.enabled = true;
 
-            //enforce identifier
+            // enforce identifier
             LootIdentifier lootIdentifier = respawnedTarget.GetComponentInChildren<LootIdentifier>();
             lootIdentifier.Identifier = dataHolder.identifier;
             lootIdentifier.LootName = dataHolder.lootName;
@@ -147,7 +148,7 @@ namespace LootRespawnControl.Managers
 }
 
 [RegisterTypeInIl2Cpp]
-public class RespawnDataHolder : MonoBehaviour  
+public class RespawnDataHolder : MonoBehaviour
 {
     public string identifier;
     public Vector3 position;
@@ -219,7 +220,7 @@ public class RespawnDataHolder : MonoBehaviour
         }
 
         //We are not on a server
-        TryRespawn();
+        this.TryRespawn();
     }
 
     private bool CanBeRespawned()
@@ -247,20 +248,17 @@ public class RespawnDataHolder : MonoBehaviour
 
     private void TryRespawn()
     {
-        if (!CanBeRespawned()) return;
+        if (!this.CanBeRespawned())
+        {
+            return;
+        }
+
         if (TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Contains(this))
         {
             TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Remove(this);
         }
-        if (isBreakable)
-        {
-            RespawnBreakable();
-        }
-        else
-        {
 
-            RespawnPickup();
-        }
+        this.RespawnPickup();
     }
 
     public void ForceRespawn()
@@ -269,51 +267,34 @@ public class RespawnDataHolder : MonoBehaviour
         {
             TimedLootRespawnManager.RespawnDataHoldersAwaitingRespawn.Remove(this);
         }
-        if (isBreakable)
-        {
-            RespawnBreakable();
-        }
-        else
-        {
-            RespawnPickup();
-        }
+
+        this.RespawnPickup();
     }
 
     private void RespawnPickup()
     {
-        //remove the loot from the respawn manager
-        LootManager.LootRespawnManager.RemoveLootFromCollected(identifier);
-        //remove the loot from the respawn data holder manager
-        RespawnDataHolderManager.RemoveLootFromRespawnManagerList(gameObject);
-        //respawn the item
-        TimedLootRespawnManager.RespawnItem(this);
-        
-        //destroy the data holder
+        // remove the loot from the respawn manager
+        LootManager.LootRespawnManager.RemoveLootFromCollected(this.identifier);
+        // remove the loot from the respawn data holder manager
+        RespawnDataHolderManager.RemoveLootFromRespawnManagerList(this.gameObject);
 
-        DebugManager.ConsoleLog($"Respawned: {lootName}...");
-        Destroy(gameObject);
-    }
+        if (isBreakable)
+        {
+            TimedLootRespawnManager.RespawnBreakable(this);
+        }
+        else
+        {
+            TimedLootRespawnManager.RespawnItem(this);
+        }
 
-    private void RespawnBreakable()
-    {
-        //remove the loot from the respawn manager
-        LootManager.LootRespawnManager.RemoveLootFromCollected(identifier);
-        //remove the loot from the respawn data holder manager
-        RespawnDataHolderManager.RemoveLootFromRespawnManagerList(gameObject);
-        //respawn the item
-        TimedLootRespawnManager.RespawnBreakable(this);
-
-
-        //destroy the data holder
-
-        DebugManager.ConsoleLog($"Respawned: {lootName}...");
-        Destroy(gameObject);
+        DebugManager.ConsoleLog($"Respawned: {this.lootName}...");
+        Destroy(this.gameObject);
     }
 
     public void setTriggerRadius(float radius)
     {
-        triggerRadius = radius;
-        triggerCollider.radius = triggerRadius;
+        this.triggerRadius = radius;
+        this.triggerCollider.radius = triggerRadius;
     }
 }
 
@@ -332,7 +313,6 @@ public class RespawnDataHolderManager : MonoBehaviour
         {
             ActiveRespawnDataHolders.Add(loot.GetComponent<RespawnDataHolder>());
         }
-
     }
 
     public static void RemoveLootFromRespawnManagerList(GameObject loot)

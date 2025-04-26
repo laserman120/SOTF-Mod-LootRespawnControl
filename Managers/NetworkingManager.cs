@@ -39,19 +39,18 @@ namespace LootRespawnControl
     }
 
     // Networking manager, register and base methods for sending
-
     internal class NetworkManager
     {
-        public static ConfigDataEvent _configDataEvent;
-        public static ConfigDataAck _configDataAck;
-        public static ConfigSyncConfirmationEvent _configSyncConfirmationEvent;
-        public static LootDataEvent _lootDataEvent;
-        public static LootDataAck _lootDataAck;
-        public static PickupEventHandler _pickupEvent;
-        public static PickupEventRequest _pickupRequest;
-        public static PickupEventAck _pickupAck;
-        public static RespawnEvent.RespawnEventHandler _respawnEvent;
-        public static RespawnEvent.RespawnEventRequest _respawnRequest;
+        private static ConfigDataEvent _configDataEvent;
+        private static ConfigDataAck _configDataAck;
+        private static ConfigSyncConfirmationEvent _configSyncConfirmationEvent;
+        private static LootDataEvent _lootDataEvent;
+        private static LootDataAck _lootDataAck;
+        private static PickupEventHandler _pickupEvent;
+        private static PickupEventRequest _pickupRequest;
+        private static PickupEventAck _pickupAck;
+        private static RespawnEvent.RespawnEventHandler _respawnEvent;
+        private static RespawnEvent.RespawnEventRequest _respawnRequest;
 
         public static void RegisterPackets()
         {
