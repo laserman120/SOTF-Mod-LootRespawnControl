@@ -95,13 +95,18 @@ namespace LootRespawnControl.Harmony
             private static bool Prefix(Sons.Gameplay.PickUp __instance)
             {
                 LootIdentifier identifierComponent = __instance.transform.GetComponent<LootIdentifier>();
-                if (identifierComponent == null) { DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing IdentifierComponent"); return true; }
+                if (identifierComponent == null)
+                {
+                    DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing IdentifierComponent");
+                    return true;
+                }
 
                 // Hotfix for interaction components which also feature a pickup component of any type
-                Transform PickupGui = __instance.transform.Find("_PickupGui_");
-                if (PickupGui == null && !IsValidRadio(__instance))
+                Transform pickupGui = __instance.transform.Find("_PickupGui_");
+                if (pickupGui == null && !IsValidRadio(__instance))
                 {
-                    DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing PickupGui "); return true;
+                    DebugManager.ConsoleLog($"Prevented collection of: {__instance.name} due to missing PickupGui ");
+                    return true;
                 }
 
                 if (__instance.name.Contains("Clone")) { return true; }
@@ -129,20 +134,22 @@ namespace LootRespawnControl.Harmony
                             if (GetHashBool(identifier) == false)
                             {
                                 return false;
-                            } else
+                            }
+                            else
                             {
                                 RemoveHash(identifier);
                                 DebugManager.ConsoleLog($"Hash is true, removing it from the list and continuing execution: {__instance.name}");
                             }
                         }
-                    } else if (BoltNetwork.isRunning && ConfigManager.ShouldIdBeNetworked(__instance._itemId))
+                    }
+                    else if (BoltNetwork.isRunning && ConfigManager.ShouldIdBeNetworked(__instance._itemId))
                     {
                         // If host send out the pickup event directly
                         NetworkManager.SendPickupEvent(__instance.name, identifier, __instance._itemId, LootRespawnControl.GetTimestampFromGameTime(TimeOfDayHolder.GetTimeOfDay().ToString()));
                     }
-                    
 
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
+
                     // Create holder for respawning...
                     if (ConfigManager.IsGlobalTimerEnabled() || ConfigManager.ShouldIdBeRemovedTimed(__instance._itemId))
                     {
@@ -156,7 +163,8 @@ namespace LootRespawnControl.Harmony
                 if (LootRespawnManager.IsLootCollected(identifier))
                 {
                     LootRespawnManager.RemoveLootFromCollected(identifier);
-                    DebugManager.ConsoleLog($"Removed Loot From collected: {__instance.name}"); return true;
+                    DebugManager.ConsoleLog($"Removed Loot From collected: {__instance.name}"); 
+                    return true;
                 }
                 return true;
             }
@@ -183,12 +191,12 @@ namespace LootRespawnControl.Harmony
 
             if (LootRespawnManager.IsLootCollected(identifier))
             {
-                //has already been marked as collected, destroy it
+                // has already been marked as collected, destroy it
                 GameObject.Destroy(__instance.gameObject);
             }
             else
             {
-                if(GetHashBool(identifier) == false)
+                if (GetHashBool(identifier) == false)
                 {
                     DebugManager.ConsoleLogWarning($"DESYNC DETECTED! Pickup already collected on the server side, but not on the client. Destroying Pickup and marking as collected! {identifier}");
                     LootRespawnManager.MarkLootAsCollected(identifier, __instance.name, __instance._itemId);
@@ -211,6 +219,7 @@ namespace LootRespawnControl.Harmony
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -264,7 +273,7 @@ namespace LootRespawnControl.Harmony
 
         public static bool IsValidRadio(Sons.Gameplay.PickUp __instance)
         {
-            if(__instance.name.StartsWith("Radio") && !__instance.name.Contains("FromStructure")){
+            if (__instance.name.StartsWith("Radio") && !__instance.name.Contains("FromStructure")){
                 return true;
             }
             return false;

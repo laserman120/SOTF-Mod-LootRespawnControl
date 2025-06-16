@@ -94,7 +94,7 @@ public class LootRespawnControl : SonsMod
     661, // battery
     517, // saucepan
     504, // tarp
-    590  // radio
+    590, // radio
 };
 
     public static List<int> ItemIdsFood = new List<int>()
@@ -108,14 +108,14 @@ public class LootRespawnControl : SonsMod
     464, // cat food
     569, // piece of brain
     570, // piece of steak
-    571  // piece of bacon
+    571, // piece of bacon
 };
 
     public static List<int> ItemIdsMedicineAndEnergy = new List<int>()
 {
     437, // pills
     441, // candy bar
-    439  //energy drink
+    439, // energy drink
 };
 
     public static List<int> ItemIdsPlants = new List<int>()
@@ -124,12 +124,13 @@ public class LootRespawnControl : SonsMod
     398, // oyster mushrooms
     399, // yellow hedgehog
     400, // fly agaric
+    449, // devils club
     450, // horsetail
     451, // aloe vera
     452, // yarrow
     453, // cypress
     454, // balsamorrhiza
-    465  // chicory
+    465, // chicory
 };
 
     public static List<int> ItemIdsAmmunition = new List<int>()
@@ -145,7 +146,7 @@ public class LootRespawnControl : SonsMod
     371, // 1-5 cartridges
     372, // 1-5 heavy bullets
     457, // 1-2 ammo for taser
-    523  // zipline rope
+    523, // zipline rope
 };
 
     public static List<int> ItemIdsThrowables = new List<int>()
@@ -161,19 +162,19 @@ public class LootRespawnControl : SonsMod
 {
     390, // printer resin
     469, // air tank
-    508  // hide bag
+    508, // hide bag
 };
 
     public static List<int> ItemIdsTransport = new List<int>()
 {
     626, // paraglider
-    630  // knight v
+    630, // knight v
 
 };
 
     public static List<int> ItemIdsBlacklistBreakable = new List<int>()
 {
-    392  // stick
+    392, // stick
 };
 
     public static List<int> CustomWhitelist = new List<int>();
@@ -350,6 +351,7 @@ public class LootIdentifier : MonoBehaviour
 
     public bool enforceIdentifier = false;
 
+    public GameObject GreebleZone { get; set; }
     public void GenerateIdentifier()
     {
         if (enforceIdentifier) return;
@@ -358,19 +360,15 @@ public class LootIdentifier : MonoBehaviour
         Rotation = transform.rotation;
         LootName = transform.name;
     }
+
     private void Awake()
     {
         GenerateIdentifier();
     }
 
-    /*void OnEnable()
-    {
-        GenerateIdentifier();
-    }   */
-
     public string ReturnIdentifier()
     {
-        return Identifier;
+        return this.Identifier;
     }
 
     public bool HasBeenCollected()

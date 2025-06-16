@@ -92,7 +92,7 @@ namespace LootRespawnControl.Networking
             }
         }
 
-        //Send the loot data as well as config data
+        // Send the loot data as well as config data
         internal class ConfigDataEvent : Packets.NetEvent
         {
             public override string Id => "ConfigSync_LootDataEvent";

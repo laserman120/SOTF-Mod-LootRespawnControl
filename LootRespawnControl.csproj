@@ -24,6 +24,9 @@
       <Reference Include="Newtonsoft.Json">
         <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_RedLoader\Game\Newtonsoft.Json.dll</HintPath>
       </Reference>
+      <Reference Include="PathologicalGames">
+        <HintPath>D:\SteamLibrary\steamapps\common\Sons Of The Forest\_Redloader\Game\PathologicalGames.dll</HintPath>
+      </Reference>
       <Reference Include="RedLoader">
         <HintPath>$(GameDir)\_RedLoader\net6\RedLoader.dll</HintPath>
       </Reference>

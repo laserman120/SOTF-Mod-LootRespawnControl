@@ -31,8 +31,18 @@ namespace LootRespawnControl.Managers
 
         public static void CreateRespawnDataHolder(GameObject destroyTarget, LootIdentifier lootIdentifier, int id)
         {
+            if (LootRespawnManager == null || RespawnDataHolderManager == null)
+            {
+                DebugManager.ConsoleLogError("LootRespawnManager or RespawnDataHolderManager was not initialized! Running initialization");
+                IntitializeManager();
+            }
+
             // Check if it already exists
-            if (RespawnDataHolderManager.DoesLootAlreadyExist("DataHolder-" + lootIdentifier.Identifier)) { return; }
+            if (RespawnDataHolderManager.DoesLootAlreadyExist("DataHolder-" + lootIdentifier.Identifier)) 
+            {
+                DebugManager.ConsoleLogWarning($"DataHolder for {lootIdentifier.Identifier} already exists, skipping creation.");
+                return; 
+            }
 
             GameObject lootRespawnDataHolder = new GameObject("DataHolder-" + lootIdentifier.Identifier);
             lootRespawnDataHolder.transform.parent = LootRespawnManager.transform; // Set the parent to the LootRespawnManager
@@ -278,7 +288,7 @@ public class RespawnDataHolder : MonoBehaviour
         // remove the loot from the respawn data holder manager
         RespawnDataHolderManager.RemoveLootFromRespawnManagerList(this.gameObject);
 
-        if (isBreakable)
+        if (this.isBreakable)
         {
             TimedLootRespawnManager.RespawnBreakable(this);
         }
